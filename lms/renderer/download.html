@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Download LMS Scope of Work</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --green: #669900;
+        --green-dark: #558000;
+        --slate: #394754;
+        --bg: #f4f6f8;
+        --border: #d8dee4;
+        --text: #1a1f24;
+        --muted: #5c6b7a;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+      }
+
+      .card {
+        width: min(560px, 100%);
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 16px 40px rgba(28, 35, 42, 0.12);
+        overflow: hidden;
+      }
+
+      .hero {
+        padding: 2rem 2rem 1.5rem;
+        background: linear-gradient(135deg, var(--slate) 0%, #2a3540 100%);
+        color: white;
+      }
+
+      .hero img {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+        margin-bottom: 1rem;
+      }
+
+      .hero h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.6rem;
+      }
+
+      .hero p {
+        margin: 0;
+        opacity: 0.88;
+        line-height: 1.5;
+      }
+
+      .content {
+        padding: 1.75rem 2rem 2rem;
+      }
+
+      .download-btn {
+        display: block;
+        width: 100%;
+        border: none;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        background: var(--green);
+        color: white;
+        font-size: 1.05rem;
+        font-weight: 700;
+        text-decoration: none;
+        text-align: center;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .download-btn:hover { background: var(--green-dark); }
+
+      .steps {
+        margin: 1.5rem 0 0;
+        padding-left: 1.2rem;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .note {
+        margin-top: 1.25rem;
+        padding: 0.9rem 1rem;
+        border-radius: 10px;
+        background: #fff8e1;
+        border: 1px solid #ffe082;
+        color: #6d4c00;
+        font-size: 0.92rem;
+      }
+
+      .note ul {
+        margin: 0.55rem 0 0.65rem;
+        padding-left: 1.15rem;
+      }
+
+      .note li + li {
+        margin-top: 0.45rem;
+      }
+
+      .meta {
+        margin-top: 1rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <section class="hero">
+        <img src="./icons/lms-icon.png" alt="LMS logo" />
+        <h1>LMS Scope of Work</h1>
+        <p>Download the Windows desktop app for Legend &amp; Scope of Work proposals.</p>
+      </section>
+      <section class="content">
+        <a class="download-btn" href="./downloads/LMS-Scope-of-Work-Setup.exe" download="LMS-Scope-of-Work-Setup.exe">
+          Download for Windows
+        </a>
+        <ol class="steps">
+          <li>Click the button above to download the installer.</li>
+          <li>Open the downloaded file and follow the setup steps.</li>
+          <li>Launch <strong>LMS Scope of Work</strong> from the Start menu.</li>
+        </ol>
+        <div class="note">
+          <strong>If Windows blocks the installer:</strong>
+          <ul>
+            <li>
+              Blue “Windows protected your PC” screen: click <strong>More info</strong>, then
+              <strong>Run anyway</strong>.
+            </li>
+            <li>
+              “Smart App Control blocked an app”: open <strong>Windows Security</strong> →
+              <strong>App &amp; browser control</strong> → <strong>Smart App Control</strong> and turn
+              it <strong>Off</strong>, then run the installer again. Windows will not let you turn
+              Smart App Control back on later without resetting the PC.
+            </li>
+            <li>
+              Or right-click the downloaded <strong>.exe</strong> → <strong>Properties</strong> → tick
+              <strong>Unblock</strong> → <strong>OK</strong>, then open it.
+            </li>
+          </ul>
+          This is an LMS in-house app. Windows flags it because the installer is not code-signed yet.
+        </div>
+        <p class="meta">Windows 10/11 · Version 1.0.0 · ~1.7 GB download</p>
+      </section>
+    </main>
+  </body>
+</html>

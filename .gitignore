@@ -1,0 +1,30 @@
+# Build output
+**/bin/
+**/obj/
+**/.vs/
+backend/ManageIT.Api/publish/
+lms/release/
+**/node_modules/
+tools/.xlsx-tmp/
+
+# Secrets and local config — never commit
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.example.json
+*.env
+.env*
+*.pfx
+*.pem
+*.key
+*.p12
+
+# Database files
+*.mdf
+*.ldf
+*.bak
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+*.user

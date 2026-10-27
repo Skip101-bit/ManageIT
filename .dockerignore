@@ -1,0 +1,11 @@
+**/bin
+**/obj
+**/.vs
+**/appsettings*.json
+backend/ManageIT.Api/publish
+backend/ManageIT_SQL
+tools
+StockIT
+lms/node_modules
+lms/release
+lms/recovered-source

@@ -1,0 +1,1940 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ManageIT — Storage Management Systems</title>
+  <!-- ManageIT UI Build: 2026-06-18 v2-modern (Inter + gradients + SVG icons) -->
+  <meta name="manageit-build" content="2026-09-07-sage-easy-import" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20261016lmsportal" />
+  <script src="config.js"></script>
+  <!-- SheetJS for Excel import (.xlsx, .xls, .csv, .ods, etc.) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- ExcelJS for professional styled Excel exports -->
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+</head>
+<body>
+
+<!-- ===================== TOAST ===================== -->
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ===================== CONFIRM MODAL ===================== -->
+<div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+  <div class="modal" style="width:400px">
+    <div class="modal-header">
+      <span class="modal-title" id="confirmTitle">Confirm</span>
+      <button class="modal-close" type="button" onclick="closeConfirm()" aria-label="Close dialog">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMessage" style="color:var(--text-muted);font-size:14px;line-height:1.5"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== LOGIN SCREEN ===================== -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-brands" id="loginBrands" role="tablist" aria-label="Choose a system">
+      <button type="button" class="login-brand is-active" id="brandSms" data-brand="sms" role="tab" aria-selected="true" onclick="setBrand('sms')">SMS</button>
+      <button type="button" class="login-brand hidden" id="brandLms" data-brand="lms" role="tab" aria-selected="false" aria-hidden="true" onclick="setBrand('lms')">LMS</button>
+    </div>
+    <div class="login-logo">
+      <div class="login-logo-text"><span data-brand-mark>Manage</span><span data-brand-accent>IT</span></div>
+      <div class="login-logo-sub" data-brand-company>Storage Management Systems (PTY) Ltd</div>
+    </div>
+    <div class="login-title">Sign In</div>
+    <div id="loginStatusBadge" class="login-status-badge offline" title="Checking connection…">Offline Mode</div>
+    <div class="login-field">
+      <label for="loginSal">SAL Number</label>
+      <input type="text" id="loginSal" name="salNumber" inputmode="numeric" pattern="[0-9]*" placeholder="SAL number" autocomplete="username" autocapitalize="off" spellcheck="false" />
+    </div>
+    <div class="login-field">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" name="password" placeholder="Password" autocomplete="current-password" />
+    </div>
+    <button class="btn-login" id="loginBtn" type="button">Sign In</button>
+    <div class="login-footer" data-brand-company>Storage Management Systems (PTY) Ltd</div>
+  </div>
+</div>
+
+<!-- ===================== APP SHELL ===================== -->
+<div id="screen-app" class="screen">
+  <div class="app-layout">
+
+    <!-- Header -->
+    <header class="app-header">
+      <button type="button" class="menu-toggle-btn" id="menuToggleBtn" aria-label="Open menu" aria-expanded="false" onclick="UI.toggleMobileSidebar()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="mobile-sync-dot offline" id="mobileSyncDot" title="Connection status"></span>
+      <div class="app-header-logo"><span data-brand-mark>Manage</span><span data-brand-accent>IT</span></div>
+      <div class="app-header-title" id="headerTitle">Dashboard</div>
+      <div class="app-header-user">
+        <div>
+          <div style="font-weight:600" id="headerUserName">—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4)" id="headerUserSal">SAL —</div>
+        </div>
+        <div class="app-header-avatar" id="headerAvatar">?</div>
+        <span class="app-header-badge" id="headerRoleBadge">User</span>
+      </div>
+    </header>
+
+    <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="UI.toggleMobileSidebar(false)"></div>
+
+    <!-- Body -->
+    <div class="app-body">
+
+      <!-- Sidebar (hidden on portal hub; shown when a portal is active) -->
+      <nav class="sidebar" id="sidebar">
+
+        <div class="sidebar-portal-header hidden" id="sidebarPortalHeader">
+          <div class="nav-item portal-back" onclick="exitPortal()">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            All Portals
+          </div>
+          <div class="sidebar-portal-title" id="sidebarPortalTitle">Stock-IT</div>
+        </div>
+
+        <!-- Stock-IT portal nav -->
+        <div class="sidebar-section portal-nav hidden" id="nav-portal-stockit">
+          <div class="sidebar-section-label">Stock-IT</div>
+          <div class="nav-item" data-page="stockithome" onclick="navTo('stockithome',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Stock-IT Home
+          </div>
+          <div class="nav-item" data-page="inventorylist" onclick="navTo('inventorylist',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Inventory List
+          </div>
+          <div class="nav-item" data-page="jobstock" onclick="navTo('jobstock',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+            Allocated Inventory
+          </div>
+          <div class="nav-item" data-page="transactions" onclick="navTo('transactions',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            Inventory Transactions
+          </div>
+          <div class="nav-item" data-page="audit" onclick="navTo('audit',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Inventory Audit
+          </div>
+          <div class="nav-item" data-page="reconciliation" onclick="navTo('reconciliation',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8"/><path d="M21 12h-5"/><path d="M3 12h5"/></svg>
+            Inventory Reconciliation
+          </div>
+          <div class="nav-item" data-page="bom" onclick="navTo('bom',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            BOM
+          </div>
+          <div class="nav-item" data-page="pastel" onclick="navTo('pastel',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+            Pastel Alignment
+          </div>
+          <div class="nav-item" id="nav-approvals-stockit" data-page="approvals" onclick="navTo('approvals',this)" style="display:none">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Approvals
+          </div>
+        </div>
+
+        <!-- Admin portal nav -->
+        <div class="sidebar-section portal-nav hidden" id="nav-portal-admin" data-perm-any="UserManagement,AssetManagement">
+          <div class="sidebar-section-label">Admin</div>
+          <div class="nav-item" data-page="adminhome" onclick="navTo('adminhome',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M21 12h-2M5 12H3M12 3V1M12 23v-2"/></svg>
+            Admin Home
+          </div>
+          <div class="nav-item" data-page="jobmanagement" onclick="navTo('jobmanagement',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+            Job Management
+          </div>
+          <div class="nav-item" data-page="generalstock" onclick="navTo('generalstock',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Inventory Management
+          </div>
+          <div class="nav-item" data-page="addstorage" onclick="navTo('addstorage',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            Storage Locations
+          </div>
+          <div class="nav-item" data-page="assetmanagement" onclick="navTo('assetmanagement',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+            Asset Management
+          </div>
+          <div class="sidebar-section-label">User Management</div>
+          <div class="nav-item" data-page="adminusers" onclick="navTo('adminusers',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            User Management
+          </div>
+          <div class="nav-item" data-page="usermanagement" onclick="navTo('usermanagement',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            All Users
+          </div>
+          <div class="nav-item" data-page="adduser" onclick="navTo('adduser',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            Add User
+          </div>
+          <div class="sidebar-section-label">Settings</div>
+          <div class="nav-item" data-perm="SystemSettings" data-perm-mode="edit" data-page="settings" onclick="navTo('settings',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </div>
+          <div class="nav-item" data-page="rolematrix" onclick="navTo('rolematrix',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            Role Permissions
+          </div>
+        </div>
+
+        <!-- Reports portal nav -->
+        <div class="sidebar-section portal-nav hidden" id="nav-portal-reports">
+          <div class="sidebar-section-label">Reports</div>
+          <div class="nav-item" data-page="dashboard" onclick="navTo('dashboard',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </div>
+          <div class="nav-item" data-page="quickactions" onclick="navTo('quickactions',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Quick Actions
+          </div>
+          <div class="nav-item" data-perm="ViewReports" data-page="kpi" onclick="navTo('kpi',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            KPI Reports
+          </div>
+          <div class="nav-item" data-perm="ExportReports" data-page="exports" onclick="navTo('exports',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exports
+          </div>
+          <div class="nav-item" data-page="useractivity" onclick="navTo('useractivity',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            User Activity
+          </div>
+          <div class="nav-item" data-page="workactivity" onclick="navTo('workactivity',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Work Activity
+          </div>
+        </div>
+
+        <div class="nav-logout">
+          <div class="nav-item" style="color:rgba(231,76,60,.7)" onclick="logout()">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+          </div>
+        </div>
+      </nav>
+
+      <!-- Main -->
+      <main class="main-content" id="mainContent">
+
+        <!-- ===== PORTAL HUB (ManageIT Home) ===== -->
+        <div id="page-home" class="page page-home page-portal-hub">
+          <div class="home-hero portal-hero">
+            <div class="home-hero-main">
+              <p class="home-hero-eyebrow">Storage Management Systems · ManageIT</p>
+              <h1 class="home-hero-title">Welcome back, <span id="homeUserName">—</span></h1>
+              <p class="home-hero-subtitle">Select a portal to manage inventory, reports, administration, or LMS</p>
+            </div>
+            <div class="home-hero-aside">
+              <div class="home-hero-date" id="homeDate">—</div>
+            </div>
+          </div>
+
+          <div class="portal-section-head">
+            <h2 class="portal-section-title">Your portals</h2>
+            <p class="portal-section-desc">Choose a workspace — each portal opens its own navigation and tools</p>
+          </div>
+
+          <div class="portal-grid">
+            <div class="portal-card portal-card-stockit" onclick="enterPortal('stockit')">
+              <div class="portal-card-icon tone-teal" data-icon="package" data-icon-size="28"></div>
+              <div class="portal-card-body">
+                <div class="portal-card-title">Stock-IT</div>
+                <div class="portal-card-desc">Inventory list, transactions, audit &amp; reconciliation</div>
+                <div class="portal-card-tags">
+                  <span class="portal-tag">Inventory</span>
+                  <span class="portal-tag">Warehouse</span>
+                </div>
+              </div>
+              <span class="portal-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="portal-card portal-card-reports" data-perm="ViewReports" onclick="enterPortal('reports')">
+              <div class="portal-card-icon tone-violet" data-icon="trend-up" data-icon-size="28"></div>
+              <div class="portal-card-body">
+                <div class="portal-card-title">Reports</div>
+                <div class="portal-card-desc">Dashboard, KPIs, activity logs &amp; Excel exports</div>
+                <div class="portal-card-tags">
+                  <span class="portal-tag">Analytics</span>
+                  <span class="portal-tag">Export</span>
+                </div>
+              </div>
+              <span class="portal-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="portal-card portal-card-admin" data-perm-any="UserManagement,AssetManagement" onclick="enterPortal('admin')">
+              <div class="portal-card-icon tone-navy" data-icon="settings" data-icon-size="28"></div>
+              <div class="portal-card-body">
+                <div class="portal-card-title">Admin</div>
+                <div class="portal-card-desc">Jobs, inventory, assets, user management &amp; settings</div>
+                <div class="portal-card-tags">
+                  <span class="portal-tag">Jobs</span>
+                  <span class="portal-tag">Assets</span>
+                  <span class="portal-tag">Users</span>
+                </div>
+              </div>
+              <span class="portal-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="portal-card portal-card-lms hidden" id="portalCardLms" onclick="openLmsPortal()">
+              <div class="portal-card-icon tone-green" data-icon="droplet" data-icon-size="28"></div>
+              <div class="portal-card-body">
+                <div class="portal-card-title">LMS</div>
+                <div class="portal-card-desc">Legend &amp; Scope of Work builder for Liquid Management Systems</div>
+                <div class="portal-card-tags">
+                  <span class="portal-tag">Scope of Work</span>
+                  <span class="portal-tag">Asset Lifecycle</span>
+                </div>
+              </div>
+              <span class="portal-card-arrow" aria-hidden="true">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== STOCK-IT HOME ===== -->
+        <div id="page-stockithome" class="page page-home page-stockit-home">
+          <div class="home-hero">
+            <div class="home-hero-main">
+              <p class="home-hero-eyebrow">Stock-IT Portal</p>
+              <h1 class="home-hero-title">Stock-IT</h1>
+              <p class="home-hero-subtitle">Master inventory register &amp; warehouse operations</p>
+            </div>
+            <div class="home-hero-aside">
+              <div class="home-hero-date" id="stockitHomeDate">—</div>
+            </div>
+          </div>
+          <div id="homeLowStockAlert" class="home-alert hidden">
+            <div class="home-alert-icon" data-icon="warning" data-icon-size="20"></div>
+            <div class="home-alert-body">
+              <div class="home-alert-title" id="homeLowStockTitle">Low inventory items need attention</div>
+              <div class="home-alert-desc" id="homeLowStockDesc">—</div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="navTo('inventorylist')">View inventory</button>
+          </div>
+          <div class="portal-section-head stockit-modules-head">
+            <h2 class="portal-section-title">Stock-IT modules</h2>
+            <p class="portal-section-desc">Inventory, BOM, stock check, and Pastel alignment</p>
+          </div>
+          <div class="home-grid stockit-modules-grid">
+            <div class="home-card" onclick="navTo('inventorylist')">
+              <div class="home-card-icon tone-teal" data-icon="package" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Inventory List</div>
+                <div class="home-card-desc">Master inventory register</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" onclick="navTo('jobstock')">
+              <div class="home-card-icon tone-green" data-icon="clipboard" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Allocated Inventory</div>
+                <div class="home-card-desc">Inventory allocated to jobs</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" onclick="navTo('transactions')">
+              <div class="home-card-icon tone-violet" data-icon="refresh" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Inventory Transactions</div>
+                <div class="home-card-desc">Receipt, transfer, relocation &amp; adjustment</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" onclick="navTo('audit')">
+              <div class="home-card-icon tone-amber" data-icon="search" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Inventory Audit</div>
+                <div class="home-card-desc">Multi-count physical audit</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" onclick="navTo('reconciliation')">
+              <div class="home-card-icon tone-navy" data-icon="scale" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Inventory Reconciliation</div>
+                <div class="home-card-desc">Compare counts vs master register</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" onclick="navTo('bom')">
+              <div class="home-card-icon tone-blue" data-icon="layers" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">BOM</div>
+                <div class="home-card-desc">Upload a BOM, check it against the master, and run the stock check</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" onclick="navTo('pastel')">
+              <div class="home-card-icon tone-indigo" data-icon="clipboard" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Pastel Alignment</div>
+                <div class="home-card-desc">Check Pastel against the Parts Library before the final update</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== INVENTORY LIST (master register) ===== -->
+        <div id="page-inventorylist" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Inventory List</div><div class="page-subtitle">Master inventory register — view only</div></div>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-toolbar">
+              <span class="table-toolbar-title">All Inventory</span>
+              <div class="search-box" style="width:280px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="invListSearch" placeholder="Search inventory…" oninput="renderInventoryList()" /></div>
+              <select class="filter-select" style="width:200px" id="invListCatFilter" onchange="renderInventoryList()">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+            <div style="overflow-x:auto"><table>
+              <thead><tr><th>Inventory #</th><th>Part Number</th><th>Description</th><th>Category</th><th>Qty</th><th>Location</th><th>Tray/Bin</th><th>Serial</th><th></th></tr></thead>
+              <tbody id="invListTableBody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ===== DASHBOARD PAGE ===== -->
+        <div id="page-dashboard" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Dashboard</div><div class="page-subtitle">Overview &amp; recent activity</div></div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon blue" data-icon="package" data-icon-size="22"></div>
+              <div><div class="stat-value" id="statTotalStock">0</div><div class="stat-label">Total Inventory Items</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon orange" data-icon="warning" data-icon-size="22"></div>
+              <div><div class="stat-value" id="statLowStock">0</div><div class="stat-label">Low Inventory Alerts (&lt;5)</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green" data-icon="clipboard" data-icon-size="22"></div>
+              <div><div class="stat-value" id="statActiveJobs">0</div><div class="stat-label">Active Jobs</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon navy" data-icon="users" data-icon-size="22"></div>
+              <div><div class="stat-value" id="statTotalUsers">0</div><div class="stat-label">System Users</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon red" data-icon="trend-down" data-icon-size="22"></div>
+              <div><div class="stat-value" id="statOutOfStock">0</div><div class="stat-label">Out of Inventory</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon purple" data-icon="store" data-icon-size="22"></div>
+              <div><div class="stat-value" id="statStorageLocations">0</div><div class="stat-label">Storage Locations</div></div>
+            </div>
+          </div>
+          <div id="dashboardLowStockAlert" class="alert-banner hidden">
+            <div>
+              <div class="alert-banner-title" id="dashboardLowStockTitle">Low stock items need attention</div>
+              <div class="alert-banner-desc" id="dashboardLowStockDesc">—</div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="enterPortal('stockit','inventorylist')">View inventory</button>
+          </div>
+          <div class="content-panel">
+            <div class="content-panel-header">
+              Recent Activity
+              <span class="content-panel-meta" id="activityFeedMeta">Last 10 events</span>
+            </div>
+            <div class="activity-feed" id="activityFeed"></div>
+            <div class="activity-show-more hidden" id="activityShowMoreWrap">
+              <button type="button" class="btn btn-outline btn-sm" id="activityShowMoreBtn" onclick="toggleActivityFeed()">Show more activity</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== QUICK ACTIONS ===== -->
+        <div id="page-quickactions" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Quick Actions</div><div class="page-subtitle">Fast access to the most common tasks</div></div>
+          </div>
+          <div class="quick-grid">
+            <div class="quick-card" onclick="enterPortal('stockit','transactions');setTransactionTab('receipt')">
+              <div class="quick-card-icon" data-icon="download" data-icon-size="22"></div>
+              <div>
+                <div class="quick-card-title">Receipt</div>
+                <div class="quick-card-desc">Receive inventory into the register</div>
+              </div>
+            </div>
+            <div class="quick-card" onclick="enterPortal('stockit','transactions');setTransactionTab('transfer')">
+              <div class="quick-card-icon" data-icon="refresh" data-icon-size="22"></div>
+              <div>
+                <div class="quick-card-title">Transfer</div>
+                <div class="quick-card-desc">Allocate inventory to jobs</div>
+              </div>
+            </div>
+            <div class="quick-card" onclick="enterPortal('stockit','transactions');setTransactionTab('relocation')">
+              <div class="quick-card-icon" data-icon="store" data-icon-size="22"></div>
+              <div>
+                <div class="quick-card-title">Relocation</div>
+                <div class="quick-card-desc">Move inventory between storage locations</div>
+              </div>
+            </div>
+            <div class="quick-card" onclick="enterPortal('admin','jobmanagement')">
+              <div class="quick-card-icon" data-icon="clipboard" data-icon-size="22"></div>
+              <div>
+                <div class="quick-card-title">Add New Job</div>
+                <div class="quick-card-desc">Create a new job record</div>
+              </div>
+            </div>
+            <div class="quick-card" onclick="enterPortal('admin','generalstock')">
+              <div class="quick-card-icon" data-icon="package" data-icon-size="22"></div>
+              <div>
+                <div class="quick-card-title">Inventory Management</div>
+                <div class="quick-card-desc">Add, edit or remove inventory items</div>
+              </div>
+            </div>
+            <div class="quick-card" onclick="enterPortal('stockit','reconciliation')">
+              <div class="quick-card-icon" data-icon="scale" data-icon-size="22"></div>
+              <div>
+                <div class="quick-card-title">Inventory Reconciliation</div>
+                <div class="quick-card-desc">Compare physical vs master register</div>
+              </div>
+            </div>
+            <div class="quick-card" onclick="enterPortal('stockit','audit')">
+              <div class="quick-card-icon" data-icon="search" data-icon-size="22"></div>
+              <div>
+                <div class="quick-card-title">Run Audit</div>
+                <div class="quick-card-desc">Audit inventory accuracy</div>
+              </div>
+            </div>
+            <div class="quick-card" onclick="navTo('kpi')">
+              <div class="quick-card-icon" data-icon="chart" data-icon-size="22"></div>
+              <div>
+                <div class="quick-card-title">View KPIs</div>
+                <div class="quick-card-desc">Performance metrics &amp; charts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== JOB MANAGEMENT ===== -->
+        <div id="page-jobmanagement" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Job Management</div><div class="page-subtitle">Create, edit and manage jobs</div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline" onclick="openImportModal('jobs')"><span class="icon-inline"><span data-icon="upload" data-icon-size="15"></span><span>Import</span></span></button>
+              <button class="btn btn-outline" onclick="exportExcel('jobs')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Excel</span></span></button>
+              <button class="btn btn-primary" onclick="jobForm('new')">+ Add Job</button>
+            </div>
+          </div>
+          <div class="split-layout">
+            <div class="split-left">
+              <div class="list-header">
+                <div class="list-header-top">
+                  <span class="list-title">Jobs</span>
+                  <span class="record-count" id="jobCount">0 records</span>
+                </div>
+                <div class="search-box">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="jobSearch" placeholder="Search by job number or description…" oninput="renderJobList()" />
+                </div>
+                <div class="filter-row">
+                  <select class="filter-select" id="jobTypeFilter" onchange="renderJobList()">
+                    <option value="">All Types</option>
+                  </select>
+                </div>
+              </div>
+              <div class="list-body" id="jobList"></div>
+            </div>
+            <div class="split-right" id="jobFormPanel">
+              <div class="form-panel">
+                <div class="form-empty" id="jobFormEmpty">
+                  <div class="form-empty-icon" data-icon="clipboard" data-icon-size="40"></div>
+                  <div class="form-empty-text">Select a job from the list, or add a new one.</div>
+                  <div class="form-empty-cta-wrap"><button type="button" class="btn btn-primary" onclick="jobForm('new')">+ Add Job</button></div>
+                </div>
+                <div id="jobFormContent" class="hidden">
+                  <div class="form-panel-header">
+                    <div>
+                      <div class="form-panel-title" id="jobFormTitle">Add Job</div>
+                      <div class="form-panel-subtitle" id="jobFormSub">Fill in the details below</div>
+                    </div>
+                    <span class="form-mode-badge add" id="jobFormBadge">NEW</span>
+                  </div>
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label class="form-label">Job Number <span class="required">*</span></label>
+                      <input type="text" class="form-input" id="fJobNumber" placeholder="Enter job number" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Job Type <span class="required">*</span></label>
+                      <select class="form-select" id="fJobType">
+                        <option value="">Select type…</option>
+                      </select>
+                    </div>
+                    <div class="form-group span-2">
+                      <label class="form-label">Job Description <span class="required">*</span></label>
+                      <input type="text" class="form-input" id="fJobDesc" placeholder="Enter job description" />
+                    </div>
+                    <div class="form-group span-2">
+                      <label class="form-label">Order Confirmation / Reference</label>
+                      <input type="text" class="form-input" id="fJobOrderConf" placeholder="Enter order confirmation or file reference" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Category</label>
+                      <select class="form-select" id="fJobCategory">
+                        <option value="">Select category…</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Status</label>
+                      <select class="form-select" id="fJobStatus">
+                        <option value="Active">Active</option>
+                        <option value="On Hold">On Hold</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn btn-primary" id="jobSaveBtn" onclick="saveJob()"><span class="icon-inline"><span data-icon="save" data-icon-size="15"></span><span>Save Job</span></span></button>
+                    <button class="btn btn-danger hidden" id="jobDeleteBtn" onclick="deleteJobConfirm()"><span class="icon-inline"><span data-icon="trash" data-icon-size="15"></span><span>Delete</span></span></button>
+                    <button class="btn btn-outline" onclick="jobFormClear()"><span class="icon-inline"><span data-icon="x" data-icon-size="15"></span><span>Cancel</span></span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== GENERAL STOCK MANAGEMENT ===== -->
+        <div id="page-generalstock" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Inventory Management</div><div class="page-subtitle">Add, edit and manage inventory items (Admin)</div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline" onclick="openImportModal('stock')"><span class="icon-inline"><span data-icon="upload" data-icon-size="15"></span><span>Import</span></span></button>
+              <button class="btn btn-outline" onclick="exportExcel('stock')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Excel</span></span></button>
+              <button class="btn btn-primary" onclick="stockForm('new')">+ Add Inventory Item</button>
+            </div>
+          </div>
+          <div class="split-layout">
+            <div class="split-left">
+              <div class="list-header">
+                <div class="list-header-top">
+                  <span class="list-title">Inventory Items</span>
+                  <span class="record-count" id="stockCount">0 records</span>
+                </div>
+                <div class="search-box">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="stockSearch" placeholder="Search by stock number or description…" oninput="renderStockList()" />
+                </div>
+                <div class="filter-row">
+                  <select class="filter-select" id="stockCategoryFilter" onchange="renderStockList()">
+                    <option value="">All Categories</option>
+                  </select>
+                </div>
+              </div>
+              <div class="list-body" id="stockList"></div>
+            </div>
+            <div class="split-right" id="stockFormPanel">
+              <div class="form-panel">
+                <div class="form-empty" id="stockFormEmpty">
+                  <div class="form-empty-icon" data-icon="package" data-icon-size="40"></div>
+                  <div class="form-empty-text">Select a stock item from the list, or add a new one.</div>
+                  <div class="form-empty-cta-wrap"><button type="button" class="btn btn-primary" onclick="stockForm('new')">+ Add Stock Item</button></div>
+                </div>
+                <div id="stockFormContent" class="hidden">
+                  <div class="form-panel-header">
+                    <div>
+                      <div class="form-panel-title" id="stockFormTitle">Add Stock Item</div>
+                      <div class="form-panel-subtitle" id="stockFormSub">Fill in the details below</div>
+                    </div>
+                    <span class="form-mode-badge add" id="stockFormBadge">NEW</span>
+                  </div>
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label class="form-label">Stock Category <span class="required">*</span></label>
+                      <select class="form-select" id="fStockCategory">
+                        <option value="">Select category…</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Stock Number <span class="required">*</span></label>
+                      <input type="text" class="form-input" id="fStockNumber" placeholder="Enter stock number" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Part Number</label>
+                      <input type="text" class="form-input" id="fPartNumber" placeholder="Enter part number" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Serial Number</label>
+                      <input type="text" class="form-input" id="fSerialNumber" placeholder="Enter serial number" />
+                    </div>
+                    <div class="form-group span-2">
+                      <label class="form-label">Part Description <span class="required">*</span></label>
+                      <input type="text" class="form-input" id="fPartDesc" placeholder="Enter part description" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Quantity <span class="required">*</span></label>
+                      <input type="number" class="form-input" id="fQty" placeholder="0" min="0" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">PO Number</label>
+                      <input type="text" class="form-input" id="fPoNumber" placeholder="Purchase order number" />
+                    </div>
+                    <div class="form-group span-2">
+                      <label class="form-label">Storage Location</label>
+                      <select class="form-select" id="fStorageLocation">
+                        <option value="">Select location…</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Tray / Bin</label>
+                      <input type="text" class="form-input" id="fTrayBin" placeholder="e.g. A1-B3" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Job Number</label>
+                      <input type="text" class="form-input" id="fStockJobNum" placeholder="Linked job number" />
+                    </div>
+                    <div class="form-group span-2">
+                      <label class="form-label">Job Category</label>
+                      <select class="form-select" id="fJobCatStock">
+                        <option value="">Select category…</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button type="button" class="btn btn-primary" id="stockSaveBtn" onclick="saveStock()"><span class="icon-inline"><span data-icon="save" data-icon-size="15"></span><span>Save</span></span></button>
+                    <button class="btn btn-danger hidden" id="stockDeleteBtn" onclick="deleteStockConfirm()"><span class="icon-inline"><span data-icon="trash" data-icon-size="15"></span><span>Delete</span></span></button>
+                    <button class="btn btn-outline" onclick="stockFormClear()"><span class="icon-inline"><span data-icon="x" data-icon-size="15"></span><span>Cancel</span></span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== JOB SPECIFIC STOCK ===== -->
+        <div id="page-jobstock" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Allocated Inventory</div><div class="page-subtitle">View inventory allocated to specific jobs</div></div>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-toolbar">
+              <span class="table-toolbar-title">Allocated Inventory Items</span>
+              <div class="search-box" style="width:260px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="jobStockSearch" placeholder="Search…" oninput="renderJobStockTable()" />
+              </div>
+              <select class="filter-select" style="width:200px" id="jobStockJobFilter" onchange="renderJobStockTable()">
+                <option value="">All Jobs</option>
+              </select>
+            </div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead><tr>
+                  <th>Inventory #</th><th>Part Number</th><th>Description</th><th>Job</th><th>Category</th><th>Qty</th><th>Location</th><th>Tray/Bin</th>
+                </tr></thead>
+                <tbody id="jobStockTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== INVENTORY TRANSACTIONS ===== -->
+        <div id="page-transactions" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Inventory Transactions</div><div class="page-subtitle">Receipt · Transfer · Relocation · Adjustment · History</div></div>
+            <button type="button" class="btn btn-outline btn-sm table-density-toggle" id="tableDensityToggle" onclick="UI.toggleTableDensity()">Compact rows</button>
+          </div>
+          <div class="mode-toggle" style="margin-bottom:20px">
+            <button class="mode-btn active" id="tabReceipt" onclick="setTransactionTab('receipt')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Receipt</span></span></button>
+            <button class="mode-btn" id="tabTransfer" onclick="setTransactionTab('transfer')"><span class="icon-inline"><span data-icon="refresh" data-icon-size="15"></span><span>Transfer</span></span></button>
+            <button class="mode-btn" id="tabRelocation" onclick="setTransactionTab('relocation')"><span class="icon-inline"><span data-icon="store" data-icon-size="15"></span><span>Relocation</span></span></button>
+            <button class="mode-btn" id="tabAdjustment" onclick="setTransactionTab('adjustment')"><span class="icon-inline"><span data-icon="edit" data-icon-size="15"></span><span>Adjustment</span></span></button>
+            <button class="mode-btn" id="tabHistory" onclick="setTransactionTab('history')"><span class="icon-inline"><span data-icon="history" data-icon-size="15"></span><span>History</span></span></button>
+          </div>
+
+          <!-- Receipt (was Book In) -->
+          <div id="txReceipt">
+            <div class="split-layout">
+              <div class="split-left">
+                <div class="list-header">
+                  <div class="list-header-top"><span class="list-title">Inventory Items</span><span class="record-count" id="biCount">0 records</span></div>
+                  <div class="search-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="biSearch" placeholder="Search…" oninput="renderBookInList()" /></div>
+                  <select class="filter-select" id="biCatFilter" onchange="renderBookInList()"><option value="">All Categories</option></select>
+                </div>
+                <div class="list-body" id="biList"></div>
+              </div>
+              <div class="split-right">
+                <div class="form-panel">
+                  <div class="form-panel-header">
+                    <div><div class="form-panel-title">Receipt</div><div class="form-panel-subtitle" id="biModeLabel">Inventory / Service Mode</div></div>
+                    <div class="mode-toggle">
+                      <button class="mode-btn active" id="biModeGeneral" onclick="setBookInMode('general')">Inventory</button>
+                      <button class="mode-btn" id="biModeJob" onclick="setBookInMode('job')">Job</button>
+                    </div>
+                  </div>
+                  <div class="tx-steps" aria-label="Receipt steps">
+                    <div class="tx-step active" id="biStep1"><span class="tx-step-num">Step 1</span>Find item</div>
+                    <div class="tx-step" id="biStep2"><span class="tx-step-num">Step 2</span>Enter quantity</div>
+                    <div class="tx-step" id="biStep3"><span class="tx-step-num">Step 3</span>Confirm</div>
+                  </div>
+                  <div id="biStatusBar" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;border:1px solid var(--border)"></div>
+                  <div id="biSuccessBanner" style="display:none"></div>
+                  <div class="form-grid">
+                    <div class="form-group"><label class="form-label">Inventory Category</label><select class="form-select" id="biFCategory"></select></div>
+                    <div class="form-group"><label class="form-label">Inventory Number <span class="required">*</span></label><input type="text" class="form-input" id="biFStockNum" placeholder="Enter or scan inventory number" oninput="biLookupStock()" /></div>
+                    <div class="form-group"><label class="form-label">Part Number</label><input type="text" class="form-input" id="biFPartNum" placeholder="Auto-fill from lookup" /></div>
+                    <div class="form-group"><label class="form-label">Part Description</label><input type="text" class="form-input" id="biFPartDesc" placeholder="Auto-fill from lookup" /></div>
+                    <div class="form-group">
+                      <label class="form-label">Serial Number</label>
+                      <select class="form-select" id="biFSerial" onchange="onSerialSelect('biFSerial','biFSerialNew')"></select>
+                      <div class="serial-add-row hidden" id="biFSerialAddRow">
+                        <input type="text" class="form-input" id="biFSerialNew" placeholder="Enter new serial number" />
+                        <button type="button" class="btn btn-sm btn-outline" onclick="addSerialNumber('biFSerial','biFSerialNew')">Add</button>
+                      </div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Quantity <span class="required">*</span></label><input type="number" class="form-input" id="biFQty" placeholder="Enter quantity" min="1" /></div>
+                    <div class="form-group span-2"><label class="form-label">Storage Location</label><select class="form-select" id="biFStoreLoc"><option value="">Select location…</option></select></div>
+                    <div class="form-group"><label class="form-label">Tray / Bin</label><input type="text" class="form-input" id="biFTrayBin" placeholder="e.g. A1-B3" /></div>
+                    <div class="form-group"><label class="form-label">PO Number</label><input type="text" class="form-input" id="biFPoNum" placeholder="Purchase order number" /></div>
+                    <div class="form-group bi-job-field"><label class="form-label">Job Number</label><input type="text" class="form-input" id="biFJobNum" placeholder="Enter job number" /></div>
+                    <div class="form-group bi-job-field"><label class="form-label">Job Category</label><select class="form-select" id="biFJobCat"><option value="">Select category…</option></select></div>
+                    <div class="form-group span-2"><label class="form-label">Comment</label><textarea class="form-input" id="biFComment" rows="2" placeholder="Optional note for this receipt"></textarea></div>
+                  </div>
+                  <div class="form-actions form-actions-sticky">
+                    <button type="button" class="btn btn-success btn-full btn-action-lg" id="biSubmitBtn" onclick="submitBookIn()"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>RECEIPT</span></span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Relocation -->
+          <div id="txRelocation" class="hidden">
+            <div class="split-layout">
+              <div class="split-left">
+                <div class="list-header">
+                  <div class="list-header-top"><span class="list-title">Inventory Items</span><span class="record-count" id="relCount">0 records</span></div>
+                  <div class="search-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="relSearch" placeholder="Search…" oninput="renderRelocationList()" /></div>
+                </div>
+                <div class="list-body" id="relList"></div>
+              </div>
+              <div class="split-right">
+                <div class="form-panel">
+                  <div class="form-panel-header">
+                    <div><div class="form-panel-title">Relocation</div><div class="form-panel-subtitle">Move inventory between storage locations</div></div>
+                  </div>
+                  <div id="relStatusBar" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;border:1px solid var(--border)"></div>
+                  <div class="form-grid">
+                    <div class="form-group span-2"><label class="form-label">Inventory Number <span class="required">*</span></label><input type="text" class="form-input" id="relFStockNum" placeholder="Scan or enter inventory number" oninput="relLookupStock()" /></div>
+                    <div class="form-group"><label class="form-label">Part Description</label><input type="text" class="form-input" id="relFPartDesc" placeholder="Auto-fill" readonly /></div>
+                    <div class="form-group"><label class="form-label">Current Location</label><input type="text" class="form-input" id="relFFromLoc" placeholder="Auto-fill" readonly /></div>
+                    <div class="form-group"><label class="form-label">Current Tray / Bin</label><input type="text" class="form-input" id="relFFromBin" placeholder="Auto-fill" readonly /></div>
+                    <div class="form-group span-2"><label class="form-label">To Location <span class="required">*</span></label><select class="form-select" id="relFToLoc"><option value="">Select location…</option></select></div>
+                    <div class="form-group"><label class="form-label">To Tray / Bin</label><input type="text" class="form-input" id="relFToBin" placeholder="e.g. A1-B3" /></div>
+                    <div class="form-group"><label class="form-label">Quantity <span class="required">*</span></label><input type="number" class="form-input" id="relFQty" placeholder="Enter quantity" min="1" /></div>
+                    <div class="form-group span-2"><label class="form-label">Comment</label><textarea class="form-input" id="relFComment" rows="2" placeholder="Optional note for this relocation"></textarea></div>
+                  </div>
+                  <div class="form-actions form-actions-sticky">
+                    <button type="button" class="btn btn-primary btn-full btn-action-lg" onclick="submitRelocation()"><span class="icon-inline"><span data-icon="store" data-icon-size="15"></span><span>RELOCATE</span></span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transfer -->
+          <div id="txTransfer" class="hidden">
+            <div class="split-layout">
+              <div class="split-left">
+                <div class="list-header">
+                  <div class="list-header-top"><span class="list-title">Inventory Items</span><span class="record-count" id="trCount">0 records</span></div>
+                  <div class="search-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="trSearch" placeholder="Search…" oninput="renderTransferList()" /></div>
+                </div>
+                <div class="list-body" id="trList"></div>
+              </div>
+              <div class="split-right">
+                <div class="form-panel">
+                  <div class="form-panel-header">
+                    <div><div class="form-panel-title">Transfer</div><div class="form-panel-subtitle" id="trModeLabel">Inventory → Job allocation</div></div>
+                    <div class="mode-toggle">
+                      <button class="mode-btn active" id="trModeGeneral" onclick="setTransferMode('general')">Inventory → Job</button>
+                      <button class="mode-btn" id="trModeJobJob" onclick="setTransferMode('jobtojob')">Job → Job</button>
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin-bottom:12px">
+                    <label class="form-label toggle-row">
+                      <input type="checkbox" id="trReverseToggle" onchange="toggleTransferReverse()" />
+                      Reverse transfer (Job → Inventory)
+                    </label>
+                  </div>
+                  <div id="trStatusBar" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;border:1px solid var(--border)"></div>
+                  <div class="form-grid">
+                    <div class="form-group span-2"><label class="form-label">Source Inventory Number <span class="required">*</span></label><input type="text" class="form-input" id="trFSource" placeholder="Enter or scan source inventory number" oninput="trLookupStock()" /></div>
+                    <div class="form-group"><label class="form-label">Job Category</label><select class="form-select" id="trFJobCat"><option value="">Select category…</option></select></div>
+                    <div class="form-group"><label class="form-label">Part Number</label><input type="text" class="form-input" id="trFPartNum" placeholder="Auto-fill from lookup" readonly /></div>
+                    <div class="form-group"><label class="form-label">Part Description</label><input type="text" class="form-input" id="trFPartDesc" placeholder="Auto-fill from lookup" readonly /></div>
+                    <div class="form-group">
+                      <label class="form-label">Serial Number</label>
+                      <select class="form-select" id="trFSerial" onchange="onSerialSelect('trFSerial','trFSerialNew')"></select>
+                      <div class="serial-add-row hidden" id="trFSerialAddRow">
+                        <input type="text" class="form-input" id="trFSerialNew" placeholder="Enter new serial number" />
+                        <button type="button" class="btn btn-sm btn-outline" onclick="addSerialNumber('trFSerial','trFSerialNew')">Add</button>
+                      </div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Quantity to Transfer <span class="required">*</span></label><input type="number" class="form-input" id="trFQty" placeholder="Enter quantity" min="1" /></div>
+                    <div class="form-group span-2" style="border-top:2px dashed var(--border);padding-top:16px;margin-top:4px">
+                      <label class="form-label" style="color:var(--navy)">TO — Destination</label>
+                    </div>
+                    <div class="form-group" id="trDestJobGroup"><label class="form-label">Destination Job Number</label><input type="text" class="form-input" id="trFDestJob" placeholder="Enter destination job number" /></div>
+                    <div class="form-group" id="trDestTypeGroup"><label class="form-label">Job Type</label><select class="form-select" id="trFJobType"><option value="">Select type…</option></select></div>
+                    <div class="form-group span-2"><label class="form-label">Comment / Reason <span class="required">*</span></label><textarea class="form-input" id="trFComment" rows="2" placeholder="Required for inventory ↔ job and job ↔ job transfers"></textarea></div>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn btn-warning btn-full" onclick="submitTransfer()"><span class="icon-inline"><span data-icon="refresh" data-icon-size="15"></span><span>TRANSFER</span></span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Adjustment -->
+          <div id="txAdjustment" class="hidden">
+            <div class="split-layout">
+              <div class="split-left">
+                <div class="list-header">
+                  <div class="list-header-top"><span class="list-title">Inventory Items</span><span class="record-count" id="adjCount">0 records</span></div>
+                  <div class="search-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="adjSearch" placeholder="Search…" oninput="renderAdjustmentList()" /></div>
+                </div>
+                <div class="list-body" id="adjList"></div>
+              </div>
+              <div class="split-right">
+                <div class="form-panel">
+                  <div class="form-panel-header">
+                    <div><div class="form-panel-title">Inventory Adjustment</div><div class="form-panel-subtitle">Correct on-hand quantity with audit trail</div></div>
+                  </div>
+                  <div id="adjStatusBar" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;border:1px solid var(--border)"></div>
+                  <div class="form-grid">
+                    <div class="form-group span-2"><label class="form-label">Inventory Number <span class="required">*</span></label><input type="text" class="form-input" id="adjFStockNum" placeholder="Scan or enter inventory number" oninput="adjLookupStock()" /></div>
+                    <div class="form-group"><label class="form-label">Part Description</label><input type="text" class="form-input" id="adjFPartDesc" placeholder="Auto-fill" readonly /></div>
+                    <div class="form-group"><label class="form-label">Current Quantity</label><input type="text" class="form-input" id="adjFCurrentQty" placeholder="—" readonly /></div>
+                    <div class="form-group"><label class="form-label">New Quantity <span class="required">*</span></label><input type="number" class="form-input" id="adjFNewQty" placeholder="Enter corrected quantity" min="0" oninput="updateAdjustmentPreview()" /></div>
+                    <div class="form-group span-2"><label class="form-label">Variance</label><input type="text" class="form-input" id="adjFVariance" placeholder="—" readonly /></div>
+                    <div class="form-group span-2"><label class="form-label">Comment / Reason</label><textarea class="form-input" id="adjFComment" rows="2" placeholder="Optional reason for this adjustment"></textarea></div>
+                  </div>
+                  <div class="form-actions form-actions-sticky">
+                    <button type="button" class="btn btn-warning btn-full btn-action-lg" onclick="submitAdjustment()"><span class="icon-inline"><span data-icon="edit" data-icon-size="15"></span><span>APPLY ADJUSTMENT</span></span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- History -->
+          <div id="txHistory" class="hidden">
+            <div class="table-wrapper">
+              <div class="table-toolbar">
+                <span class="table-toolbar-title">Transaction History</span>
+                <div class="search-box" style="width:260px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="txHistSearch" placeholder="Search…" oninput="renderTxHistory()" /></div>
+                <select class="filter-select" style="width:160px" id="txHistTypeFilter" onchange="renderTxHistory()"><option value="">All Types</option><option>Receipt</option><option>Transfer</option><option>Relocation</option><option>Adjustment</option></select>
+              </div>
+              <div style="overflow-x:auto"><table>
+                <thead><tr><th>Date/Time</th><th>Type</th><th>Inventory #</th><th>Part Description</th><th>Qty</th><th>Bal. Before</th><th>Bal. After</th><th>Location</th><th>Job</th><th>Comment</th><th>User</th><th></th></tr></thead>
+                <tbody id="txHistoryBody"></tbody>
+              </table></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== STOCK RECONCILIATION ===== -->
+        <div id="page-reconciliation" class="page page-recon">
+          <div class="page-header">
+            <div><div class="page-title">Inventory Reconciliation</div><div class="page-subtitle">Compare physical counts against master register</div></div>
+            <div class="page-header-actions">
+              <button class="btn btn-primary" onclick="AuditWF.runReconciliation()"><span class="icon-inline"><span data-icon="scale" data-icon-size="15"></span><span>Run Reconciliation</span></span></button>
+              <button class="btn btn-outline hidden" id="reconApproveBtn" onclick="AuditWF.openApproval()">Review &amp; Approve</button>
+            </div>
+          </div>
+          <div class="workflow-steps" id="reconWorkflowSteps" aria-label="Reconciliation workflow">
+            <div class="workflow-step" data-step="1"><span class="workflow-step-num">1</span>Recon vs Count 1</div>
+            <div class="workflow-step" data-step="2"><span class="workflow-step-num">2</span>Recon vs Count 2</div>
+            <div class="workflow-step" data-step="3"><span class="workflow-step-num">3</span>Recon vs Count 3</div>
+            <div class="workflow-step" data-step="4"><span class="workflow-step-num">4</span>Approve &amp; Export</div>
+          </div>
+          <div class="recon-controls">
+            <div class="recon-controls-filters">
+              <div class="form-group recon-filter">
+                <label class="form-label" for="reconSessionSelect">Audit session</label>
+                <select class="form-select" id="reconSessionSelect" onchange="AuditWF.selectSession(this.value)"></select>
+              </div>
+              <div class="form-group recon-filter recon-filter-sm">
+                <label class="form-label" for="reconCountSelect">Report</label>
+                <select class="form-select" id="reconCountSelect" onchange="AuditWF.renderReconPage()">
+                  <option value="1">Report 1 (Count 1)</option>
+                  <option value="2">Report 2 (Count 2)</option>
+                  <option value="3">Report 3 (Count 3)</option>
+                </select>
+              </div>
+            </div>
+            <div id="reconWorkflowInfo" class="workflow-banner workflow-banner-inline">
+              <span class="workflow-banner-icon" data-icon="info" data-icon-size="16"></span>
+              <span class="workflow-banner-text">Select an audit session and count, then run reconciliation.</span>
+            </div>
+          </div>
+          <div class="recon-layout">
+            <div class="recon-panel recon-panel-main">
+              <div class="table-wrapper recon-table-panel">
+                <div class="table-toolbar">
+                  <span class="table-toolbar-title">Reconciliation Report</span>
+                  <span class="table-toolbar-meta" id="reconReportMeta"></span>
+                </div>
+                <div class="recon-table-scroll">
+                  <table class="recon-table">
+                    <thead><tr><th>Stock #</th><th>Part #</th><th>Description</th><th>Master</th><th>C1</th><th>C2</th><th>C3</th><th>Mstr Var</th><th>C1–C2</th><th>C2–C3</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody id="reconcileTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="recon-panel recon-panel-side">
+              <div class="list-header">
+                <div class="list-header-top">
+                  <span class="list-title">Reconciliation History</span>
+                  <span class="record-count" id="reconHistoryCount">0 runs</span>
+                </div>
+              </div>
+              <div class="list-body" id="reconHistoryList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== INVENTORY AUDIT ===== -->
+        <div id="page-audit" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Inventory Audit</div><div class="page-subtitle">Multi-count physical inventory — on-hand quantities are never shown</div></div>
+            <div class="page-header-actions">
+              <button class="btn btn-outline" onclick="exportExcel('countsheet')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Count Sheet</span></span></button>
+              <button class="btn btn-outline" onclick="AuditWF.importCountSheet()"><span class="icon-inline"><span data-icon="upload" data-icon-size="15"></span><span>Import Count Sheet</span></span></button>
+              <input type="file" id="auditCountSheetInput" accept=".xlsx,.xls,.csv,.tsv,.ods,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none" onchange="AuditWF.handleCountSheetFile(this)" />
+              <button class="btn btn-primary" onclick="AuditWF.startCount1()"><span class="icon-inline"><span data-icon="search" data-icon-size="15"></span><span>Start Count 1</span></span></button>
+              <button class="btn btn-outline hidden" id="auditFixCountBtn" onclick="AuditWF.fixCount()">Go Back to Fix Count</button>
+              <button class="btn btn-success" id="auditSubmitCountBtn" onclick="AuditWF.submitCount()">Submit Count</button>
+            </div>
+          </div>
+          <div class="workflow-steps" aria-label="Audit workflow">
+            <div class="workflow-step"><span class="workflow-step-num">1</span>Count 1</div>
+            <div class="workflow-step"><span class="workflow-step-num">2</span>Recon 1 → Count 2</div>
+            <div class="workflow-step"><span class="workflow-step-num">3</span>Recon 2 → Count 3</div>
+            <div class="workflow-step"><span class="workflow-step-num">4</span>Recon 3 → Approve</div>
+          </div>
+          <div id="auditWorkflowBanner" class="workflow-banner">Start a new count session or select an existing session.</div>
+          <div class="filter-row" style="margin-bottom:16px">
+            <select class="form-select" id="auditSessionSelect" style="max-width:300px" onchange="AuditWF.selectSession(this.value)"></select>
+            <select class="form-select" id="auditCountSelect" style="max-width:160px" onchange="AuditWF.renderAuditPage()">
+              <option value="1">Count 1</option>
+              <option value="2">Count 2</option>
+              <option value="3">Count 3</option>
+            </select>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-toolbar"><span class="table-toolbar-title">Count entry</span></div>
+            <div style="overflow-x:auto"><table>
+              <thead><tr><th>Stock #</th><th>Part #</th><th>Description</th><th>Category</th><th>Serial</th><th>Counted Qty</th></tr></thead>
+              <tbody id="auditCountBody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ===== ADD STORAGE ===== -->
+        <div id="page-addstorage" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Storage Locations</div><div class="page-subtitle">Manage storage locations and bins</div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline" onclick="openImportModal('storage')"><span class="icon-inline"><span data-icon="upload" data-icon-size="15"></span><span>Import</span></span></button>
+              <button class="btn btn-outline" onclick="exportExcel('storage')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Excel</span></span></button>
+              <button class="btn btn-primary" onclick="storageForm('new')">+ Add Location</button>
+            </div>
+          </div>
+          <div class="split-layout">
+            <div class="split-left">
+              <div class="list-header">
+                <div class="list-header-top"><span class="list-title">Locations</span><span class="record-count" id="storageCount">0 records</span></div>
+                <div class="search-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="storageSearch" placeholder="Search locations…" oninput="renderStorageList()" /></div>
+              </div>
+              <div class="list-body" id="storageList"></div>
+            </div>
+            <div class="split-right">
+              <div class="form-panel">
+                <div class="form-empty" id="storageFormEmpty"><div class="form-empty-icon" data-icon="store" data-icon-size="40"></div><div class="form-empty-text">Select a location or add new</div></div>
+                <div id="storageFormContent" class="hidden">
+                  <div class="form-panel-header">
+                    <div class="form-panel-title" id="storageFormTitle">Add Location</div>
+                    <span class="form-mode-badge add" id="storageFormBadge">NEW</span>
+                  </div>
+                  <div class="form-grid single">
+                    <div class="form-group"><label class="form-label">Location Name <span class="required">*</span></label><input type="text" class="form-input" id="fStorageName" placeholder="Enter location name" /></div>
+                    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="fStorageDesc" placeholder="Enter description"></textarea></div>
+                    <div class="form-group"><label class="form-label">Building / Area</label><input type="text" class="form-input" id="fStorageBuilding" placeholder="e.g. 105 Workshop" /></div>
+                    <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="fStorageType"><option value="">Select type…</option><option>Hanel</option><option>Shelf</option><option>Bin</option><option>Rack</option><option>Other</option></select></div>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn btn-primary" id="storageSaveBtn" onclick="saveStorage()"><span class="icon-inline"><span data-icon="save" data-icon-size="15"></span><span>Save</span></span></button>
+                    <button class="btn btn-danger hidden" id="storageDeleteBtn" onclick="deleteStorageConfirm()"><span class="icon-inline"><span data-icon="trash" data-icon-size="15"></span><span>Delete</span></span></button>
+                    <button class="btn btn-outline" onclick="storageFormClear()"><span class="icon-inline"><span data-icon="x" data-icon-size="15"></span><span>Cancel</span></span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== USER MANAGEMENT ===== -->
+        <div id="page-usermanagement" class="page">
+          <div class="page-header">
+            <div><div class="page-title">User Management</div><div class="page-subtitle">View and manage system users</div></div>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-toolbar">
+              <span class="table-toolbar-title">All Users</span>
+              <div class="search-box" style="width:260px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="userMgmtSearch" placeholder="Search users…" oninput="renderUserMgmtTable()" /></div>
+              <select class="filter-select" style="width:160px" id="userMgmtRoleFilter" onchange="renderUserMgmtTable()"><option value="">All Roles</option><option value="admin">Admin</option><option value="user">User</option></select>
+            </div>
+            <div style="overflow-x:auto"><table>
+              <thead><tr><th>SAL #</th><th>Name</th><th>Role</th><th>Status</th><th>LMS</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody id="userMgmtTableBody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ===== ADD USER ===== -->
+        <div id="page-adduser" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Add / Edit User</div><div class="page-subtitle">Create or modify user accounts</div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline" onclick="openImportModal('users')"><span class="icon-inline"><span data-icon="upload" data-icon-size="15"></span><span>Import</span></span></button>
+              <button class="btn btn-outline" onclick="exportExcel('users')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Excel</span></span></button>
+            </div>
+          </div>
+          <div class="split-layout">
+            <div class="split-left">
+              <div class="list-header">
+                <div class="list-header-top"><span class="list-title">Users</span><span class="record-count" id="addUserCount">0 records</span></div>
+                <div class="search-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="addUserSearch" placeholder="Search users…" oninput="renderUserList()" /></div>
+              </div>
+              <div class="list-body" id="userList"></div>
+            </div>
+            <div class="split-right">
+              <div class="form-panel">
+                <div class="form-empty" id="userFormEmpty"><div class="form-empty-icon" data-icon="user" data-icon-size="40"></div><div class="form-empty-text">Select a user or click <strong>+ Add</strong></div></div>
+                <div id="userFormContent" class="hidden">
+                  <div class="form-panel-header">
+                    <div><div class="form-panel-title" id="userFormTitle">Add User</div></div>
+                    <button class="btn btn-primary btn-sm" onclick="userForm('new')">+ New</button>
+                  </div>
+                  <div class="form-grid">
+                    <div class="form-group"><label class="form-label">First Name <span class="required">*</span></label><input type="text" class="form-input" id="fUserFirstName" placeholder="First name" /></div>
+                    <div class="form-group"><label class="form-label">Last Name <span class="required">*</span></label><input type="text" class="form-input" id="fUserLastName" placeholder="Last name" /></div>
+                    <div class="form-group"><label class="form-label">SAL Number <span class="required">*</span></label><input type="text" class="form-input" id="fUserSal" placeholder="Numeric SAL number" /></div>
+                    <div class="form-group"><label class="form-label">Password <span class="required">*</span></label><input type="text" class="form-input" id="fUserPassword" placeholder="Set password" /></div>
+                    <div class="form-group"><label class="form-label">User Role <span class="required">*</span></label><select class="form-select" id="fUserRole">
+                      <option value="viewer">Viewer</option>
+                      <option value="stockCapturer">Stock Capturer</option>
+                      <option value="approver">Approver</option>
+                      <option value="storeManager">Store Manager</option>
+                      <option value="auditor">Auditor</option>
+                      <option value="admin">Admin</option>
+                    </select></div>
+                    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="fUserStatus"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
+                    <div class="form-group" style="grid-column:1/-1">
+                      <label class="form-label" for="fUserCanAccessLms" style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600">
+                        <input type="checkbox" id="fUserCanAccessLms" style="width:18px;height:18px" />
+                        Can access LMS (Scope of Work)
+                      </label>
+                      <div class="form-hint" style="margin-top:4px;color:var(--muted,#64748b);font-size:.85rem">When off, this user will not see the LMS tab on the login page and cannot open LMS.</div>
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button type="button" class="btn btn-primary" id="userSaveBtn" onclick="saveUser()"><span class="icon-inline"><span data-icon="save" data-icon-size="15"></span><span>Save User</span></span></button>
+                    <button class="btn btn-danger hidden" id="userDeleteBtn" onclick="deleteUserConfirm()"><span class="icon-inline"><span data-icon="trash" data-icon-size="15"></span><span>Delete</span></span></button>
+                    <button class="btn btn-outline" onclick="userFormClear()"><span class="icon-inline"><span data-icon="x" data-icon-size="15"></span><span>Cancel</span></span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== KPI REPORTS ===== -->
+        <div id="page-kpi" class="page">
+          <div class="page-header">
+            <div><div class="page-title">KPI Reports</div><div class="page-subtitle">Key performance indicators and analytics</div></div>
+            <button class="btn btn-outline" onclick="refreshKPIs()"><span class="icon-inline"><span data-icon="refresh" data-icon-size="15"></span><span>Refresh</span></span></button>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon blue" data-icon="package" data-icon-size="24"></div><div><div class="stat-value" id="kpiTotalItems">0</div><div class="stat-label">Total Stock Items</div></div></div>
+            <div class="stat-card"><div class="stat-icon green" data-icon="download" data-icon-size="24"></div><div><div class="stat-value" id="kpiBookIns">0</div><div class="stat-label">Total Book-Ins</div></div></div>
+            <div class="stat-card"><div class="stat-icon red" data-icon="upload" data-icon-size="24"></div><div><div class="stat-value" id="kpiBookOuts">0</div><div class="stat-label">Total Book-Outs</div></div></div>
+            <div class="stat-card"><div class="stat-icon orange" data-icon="refresh" data-icon-size="24"></div><div><div class="stat-value" id="kpiTransfers">0</div><div class="stat-label">Transfers</div></div></div>
+          </div>
+          <div class="chart-grid">
+            <div class="chart-card">
+              <div class="chart-title"><span class="icon-inline"><span data-icon="package" data-icon-size="18"></span><span>Stock by Category</span></span></div>
+              <div class="donut-wrap" id="kpiCategoryChart"></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title"><span class="icon-inline"><span data-icon="location" data-icon-size="18"></span><span>Stock by Location (Top 7)</span></span></div>
+              <div class="bar-chart" id="kpiLocationChart"></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title"><span class="icon-inline"><span data-icon="clipboard" data-icon-size="18"></span><span>Jobs by Type</span></span></div>
+              <div class="bar-chart" id="kpiJobTypeChart"></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title"><span class="icon-inline"><span data-icon="bolt" data-icon-size="18"></span><span>Transaction Activity (Last 30 days)</span></span></div>
+              <div class="bar-chart" id="kpiTxChart"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== EXPORTS ===== -->
+        <div id="page-exports" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Import / Export</div><div class="page-subtitle">Import from Excel, CSV, or other spreadsheets · Export professional Excel workbooks</div></div>
+            <button class="btn btn-primary" onclick="exportAllExcel()"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export All (Excel)</span></span></button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+            <!-- IMPORT SECTION -->
+            <div class="export-section" style="border-left:4px solid var(--blue);grid-column:1/-1">
+              <div class="export-title" style="color:var(--blue)"><span class="icon-inline"><span data-icon="upload" data-icon-size="18"></span><span>Import Data</span></span></div>
+              <p class="text-muted" style="font-size:13px;margin-bottom:16px">Import inventory, jobs, users, or storage locations from Excel (.xlsx, .xls), CSV, TSV, ODS, JSON, and other spreadsheet formats. Columns are mapped automatically.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-blue" onclick="openImportModal('stock')"><span class="icon-inline"><span data-icon="package" data-icon-size="15"></span><span>Import Inventory</span></span></button>
+                <button class="btn btn-blue" onclick="openImportModal('jobs')"><span class="icon-inline"><span data-icon="clipboard" data-icon-size="15"></span><span>Import Jobs</span></span></button>
+                <button class="btn btn-blue" onclick="openImportModal('users')"><span class="icon-inline"><span data-icon="users" data-icon-size="15"></span><span>Import Users</span></span></button>
+                <button class="btn btn-blue" onclick="openImportModal('storage')"><span class="icon-inline"><span data-icon="store" data-icon-size="15"></span><span>Import Locations</span></span></button>
+              </div>
+            </div>
+            <div class="export-section">
+              <div class="export-title"><span class="icon-inline"><span data-icon="package" data-icon-size="18"></span><span>Stock Inventory</span></span></div>
+              <p class="text-muted" style="font-size:13px;margin-bottom:16px">Download a professionally formatted Excel workbook with headers, filters, and styling.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary" onclick="exportExcel('stock')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Inventory</span></span></button>
+                <button class="btn btn-outline" onclick="exportExcel('lowstock')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Low Inventory</span></span></button>
+              </div>
+            </div>
+            <div class="export-section">
+              <div class="export-title"><span class="icon-inline"><span data-icon="clipboard" data-icon-size="18"></span><span>Jobs</span></span></div>
+              <p class="text-muted" style="font-size:13px;margin-bottom:16px">Export job records with descriptions, types and status.</p>
+              <button class="btn btn-primary" onclick="exportExcel('jobs')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Jobs</span></span></button>
+            </div>
+            <div class="export-section">
+              <div class="export-title"><span class="icon-inline"><span data-icon="store" data-icon-size="18"></span><span>Storage Locations</span></span></div>
+              <p class="text-muted" style="font-size:13px;margin-bottom:16px">Export all storage locations and bin areas.</p>
+              <button class="btn btn-primary" onclick="exportExcel('storage')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Locations</span></span></button>
+            </div>
+            <div class="export-section">
+              <div class="export-title"><span class="icon-inline"><span data-icon="refresh" data-icon-size="18"></span><span>Transaction History</span></span></div>
+              <p class="text-muted" style="font-size:13px;margin-bottom:16px">Export receipt, transfer, relocation, and adjustment records.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary" onclick="exportExcel('transactions')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>All Transactions</span></span></button>
+              </div>
+            </div>
+            <div class="export-section">
+              <div class="export-title"><span class="icon-inline"><span data-icon="users" data-icon-size="18"></span><span>Users</span></span></div>
+              <p class="text-muted" style="font-size:13px;margin-bottom:16px">Export user list (passwords excluded).</p>
+              <button class="btn btn-primary" onclick="exportExcel('users')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Users</span></span></button>
+            </div>
+            <div class="export-section">
+              <div class="export-title"><span class="icon-inline"><span data-icon="history" data-icon-size="18"></span><span>Activity Log</span></span></div>
+              <p class="text-muted" style="font-size:13px;margin-bottom:16px">Export user activity and audit trail.</p>
+              <button class="btn btn-primary" onclick="exportExcel('activity')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Activity</span></span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== USER ACTIVITY ===== -->
+        <div id="page-useractivity" class="page">
+          <div class="page-header">
+            <div><div class="page-title">User Activity</div><div class="page-subtitle">Login history and user actions</div></div>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-toolbar">
+              <span class="table-toolbar-title">Activity Log</span>
+              <div class="search-box" style="width:260px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="activitySearch" placeholder="Search…" oninput="renderActivityTable()" /></div>
+            </div>
+            <div style="overflow-x:auto"><table>
+              <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Screen</th><th>Description</th></tr></thead>
+              <tbody id="activityTableBody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ===== WORK ACTIVITY ===== -->
+        <div id="page-workactivity" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Work Activity</div><div class="page-subtitle">Stock movements and job activity summary</div></div>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-toolbar">
+              <span class="table-toolbar-title">Work Log</span>
+              <div class="search-box" style="width:260px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="workActivitySearch" placeholder="Search…" oninput="renderWorkActivityTable()" /></div>
+            </div>
+            <div style="overflow-x:auto"><table>
+              <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Stock #</th><th>Description</th><th>Qty</th></tr></thead>
+              <tbody id="workActivityTableBody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ===== ASSET MANAGEMENT ===== -->
+        <div id="page-assetmanagement" class="page page-assets">
+          <div class="page-header">
+            <div><div class="page-title">Asset Management</div><div class="page-subtitle">Fixed assets, equipment register, maintenance &amp; compliance</div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline" onclick="openImportModal('assets')"><span class="icon-inline"><span data-icon="upload" data-icon-size="15"></span><span>Import</span></span></button>
+              <button class="btn btn-outline" onclick="exportExcel('assets')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Excel</span></span></button>
+              <button class="btn btn-primary" data-perm="AssetManagement" data-perm-mode="edit" onclick="assetForm('new')">+ Add Asset</button>
+            </div>
+          </div>
+          <div class="stats-grid asset-stats-grid">
+            <div class="stat-card"><div class="stat-icon navy" data-icon="layers" data-icon-size="22"></div><div><div class="stat-value" id="assetStatTotal">0</div><div class="stat-label">Total Assets</div></div></div>
+            <div class="stat-card"><div class="stat-icon green" data-icon="check" data-icon-size="22"></div><div><div class="stat-value" id="assetStatActive">0</div><div class="stat-label">Active / In Use</div></div></div>
+            <div class="stat-card"><div class="stat-icon orange" data-icon="settings" data-icon-size="22"></div><div><div class="stat-value" id="assetStatMaint">0</div><div class="stat-label">In Maintenance</div></div></div>
+            <div class="stat-card"><div class="stat-icon red" data-icon="warning" data-icon-size="22"></div><div><div class="stat-value" id="assetStatDue">0</div><div class="stat-label">Due (30 days)</div></div></div>
+          </div>
+          <div class="mode-toggle asset-tabs" id="assetTabs">
+            <button type="button" class="mode-btn active" data-tab="register" onclick="switchAssetTab('register')"><span class="icon-inline"><span data-icon="layers" data-icon-size="15"></span><span>Asset Register</span></span></button>
+            <button type="button" class="mode-btn" data-tab="maintenance" onclick="switchAssetTab('maintenance')"><span class="icon-inline"><span data-icon="settings" data-icon-size="15"></span><span>Maintenance</span></span></button>
+            <button type="button" class="mode-btn" data-tab="alerts" onclick="switchAssetTab('alerts')"><span class="icon-inline"><span data-icon="warning" data-icon-size="15"></span><span>Due &amp; Alerts</span></span></button>
+          </div>
+          <div id="assetTab-register" class="asset-tab-panel">
+            <div class="split-layout">
+              <div class="split-left">
+                <div class="list-header">
+                  <div class="list-header-top"><span class="list-title">Assets</span><span class="record-count" id="assetCount">0 records</span></div>
+                  <div class="search-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="assetSearch" placeholder="Search assets…" oninput="renderAssetList()" /></div>
+                  <div class="filter-row">
+                    <select class="filter-select" id="assetCatFilter" onchange="renderAssetList()"><option value="">All Categories</option></select>
+                    <select class="filter-select" id="assetStatusFilter" onchange="renderAssetList()"><option value="">All Statuses</option></select>
+                  </div>
+                </div>
+                <div class="list-body" id="assetList"></div>
+              </div>
+              <div class="split-right" id="assetFormPanel">
+                <div class="form-panel">
+                  <div class="form-empty" id="assetFormEmpty"><div class="form-empty-icon" data-icon="layers" data-icon-size="40"></div><div class="form-empty-text">Select an asset or register a new fixed asset.</div><div class="form-empty-cta-wrap"><button type="button" class="btn btn-primary" onclick="assetForm('new')">+ Add Asset</button></div></div>
+                  <div id="assetFormContent" class="hidden">
+                    <div class="form-panel-header">
+                      <div><div class="form-panel-title" id="assetFormTitle">Add Asset</div><div class="form-panel-subtitle" id="assetFormSub">Register equipment, vehicles, tools &amp; facilities</div></div>
+                      <span class="form-mode-badge add" id="assetFormBadge">NEW</span>
+                    </div>
+                    <div class="form-grid">
+                      <div class="form-group"><label class="form-label">Asset Number <span class="required">*</span></label><input type="text" class="form-input" id="fAssetNumber" placeholder="e.g. AST-001" /></div>
+                      <div class="form-group"><label class="form-label">Asset Name <span class="required">*</span></label><input type="text" class="form-input" id="fAssetName" placeholder="Descriptive name" /></div>
+                      <div class="form-group span-2"><label class="form-label">Description</label><input type="text" class="form-input" id="fAssetDesc" placeholder="What is this asset used for?" /></div>
+                      <div class="form-group"><label class="form-label">Category</label><select class="form-select" id="fAssetCategory"></select></div>
+                      <div class="form-group"><label class="form-label">Sub-category</label><input type="text" class="form-input" id="fAssetSubCat" placeholder="Optional" /></div>
+                      <div class="form-group"><label class="form-label">Manufacturer</label><input type="text" class="form-input" id="fAssetManufacturer" /></div>
+                      <div class="form-group"><label class="form-label">Model</label><input type="text" class="form-input" id="fAssetModel" /></div>
+                      <div class="form-group"><label class="form-label">Serial Number</label><input type="text" class="form-input" id="fAssetSerial" /></div>
+                      <div class="form-group"><label class="form-label">Asset Tag / Barcode</label><input type="text" class="form-input" id="fAssetTag" placeholder="QR or barcode tag" /></div>
+                      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="fAssetStatus"></select></div>
+                      <div class="form-group"><label class="form-label">Condition</label><select class="form-select" id="fAssetCondition"></select></div>
+                      <div class="form-group span-2"><label class="form-label">Storage Location</label><select class="form-select" id="fAssetLocation"></select></div>
+                      <div class="form-group"><label class="form-label">Allocated to Job</label><select class="form-select" id="fAssetJob"></select></div>
+                      <div class="form-group"><label class="form-label">Assigned To</label><select class="form-select" id="fAssetAssigned"></select></div>
+                      <div class="form-group"><label class="form-label">Department</label><input type="text" class="form-input" id="fAssetDept" placeholder="e.g. Warehouse, Service" /></div>
+                      <div class="form-group"><label class="form-label">Purchase Date</label><input type="date" class="form-input" id="fAssetPurchaseDate" /></div>
+                      <div class="form-group"><label class="form-label">Purchase Cost (R)</label><input type="number" class="form-input" id="fAssetPurchaseCost" min="0" step="0.01" /></div>
+                      <div class="form-group"><label class="form-label">Current Value (R)</label><input type="number" class="form-input" id="fAssetCurrentValue" min="0" step="0.01" /></div>
+                      <div class="form-group"><label class="form-label">Warranty Expiry</label><input type="date" class="form-input" id="fAssetWarranty" /></div>
+                      <div class="form-group"><label class="form-label">Insurance Expiry</label><input type="date" class="form-input" id="fAssetInsurance" /></div>
+                      <div class="form-group"><label class="form-label">Last Inspection</label><input type="date" class="form-input" id="fAssetLastInsp" /></div>
+                      <div class="form-group"><label class="form-label">Next Inspection Due</label><input type="date" class="form-input" id="fAssetNextInsp" /></div>
+                      <div class="form-group"><label class="form-label">Maint. Interval (days)</label><input type="number" class="form-input" id="fAssetMaintInterval" min="0" placeholder="90" /></div>
+                      <div class="form-group"><label class="form-label">Depreciation (years)</label><input type="number" class="form-input" id="fAssetDepYears" min="0" /></div>
+                      <div class="form-group span-2"><label class="form-label">Notes</label><textarea class="form-textarea" id="fAssetNotes" rows="3" placeholder="Service history, compliance notes…"></textarea></div>
+                    </div>
+                    <div class="form-actions">
+                      <button class="btn btn-primary" id="assetSaveBtn" onclick="saveAsset()"><span class="icon-inline"><span data-icon="save" data-icon-size="15"></span><span>Save Asset</span></span></button>
+                      <button class="btn btn-outline" onclick="scheduleMaintForAsset()">Log Maintenance</button>
+                      <button class="btn btn-danger hidden" id="assetDeleteBtn" onclick="deleteAssetConfirm()"><span class="icon-inline"><span data-icon="trash" data-icon-size="15"></span><span>Delete</span></span></button>
+                      <button class="btn btn-outline" onclick="assetFormClear()">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="assetTab-maintenance" class="asset-tab-panel hidden">
+            <div class="split-layout">
+              <div class="split-left">
+                <div class="list-header">
+                  <div class="list-header-top"><span class="list-title">Maintenance Records</span><span class="record-count" id="maintCount">0 records</span></div>
+                  <div class="search-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="maintSearch" placeholder="Search maintenance…" oninput="renderMaintList()" /></div>
+                </div>
+                <div class="list-body" id="maintList"></div>
+              </div>
+              <div class="split-right" id="maintFormPanel">
+                <div class="form-panel">
+                  <div class="form-empty" id="maintFormEmpty"><div class="form-empty-icon" data-icon="settings" data-icon-size="40"></div><div class="form-empty-text">Log preventive, corrective, or inspection work.</div><div class="form-empty-cta-wrap"><button type="button" class="btn btn-primary" onclick="maintForm()">+ Log Maintenance</button></div></div>
+                  <div id="maintFormContent" class="hidden">
+                    <div class="form-panel-header">
+                      <div><div class="form-panel-title" id="maintFormTitle">Log Maintenance</div><div class="form-panel-subtitle" id="maintFormSub">Schedule or record completed work</div></div>
+                    </div>
+                    <div class="form-grid single">
+                      <div class="form-group"><label class="form-label">Asset <span class="required">*</span></label><select class="form-select" id="fMaintAsset"></select></div>
+                      <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="fMaintType"></select></div>
+                      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="fMaintStatus"></select></div>
+                      <div class="form-group"><label class="form-label">Scheduled Date</label><input type="date" class="form-input" id="fMaintScheduled" /></div>
+                      <div class="form-group"><label class="form-label">Completed Date</label><input type="date" class="form-input" id="fMaintCompleted" /></div>
+                      <div class="form-group"><label class="form-label">Performed By</label><input type="text" class="form-input" id="fMaintBy" placeholder="Technician or internal staff" /></div>
+                      <div class="form-group"><label class="form-label">Vendor / Contractor</label><input type="text" class="form-input" id="fMaintVendor" /></div>
+                      <div class="form-group"><label class="form-label">Cost (R)</label><input type="number" class="form-input" id="fMaintCost" min="0" step="0.01" /></div>
+                      <div class="form-group"><label class="form-label">Description</label><input type="text" class="form-input" id="fMaintDesc" placeholder="Work performed" /></div>
+                      <div class="form-group"><label class="form-label">Parts Used</label><input type="text" class="form-input" id="fMaintParts" /></div>
+                      <div class="form-group"><label class="form-label">Next Due Date</label><input type="date" class="form-input" id="fMaintNextDue" /></div>
+                      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="fMaintNotes" rows="2"></textarea></div>
+                    </div>
+                    <div class="form-actions">
+                      <button class="btn btn-primary" id="maintSaveBtn" onclick="saveMaint()"><span class="icon-inline"><span data-icon="save" data-icon-size="15"></span><span>Save</span></span></button>
+                      <button class="btn btn-danger hidden" id="maintDeleteBtn" onclick="deleteMaintConfirm()"><span class="icon-inline"><span data-icon="trash" data-icon-size="15"></span><span>Delete</span></span></button>
+                      <button class="btn btn-outline" onclick="maintFormClear()">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="assetTab-alerts" class="asset-tab-panel hidden">
+            <div class="table-wrapper">
+              <div class="table-toolbar"><span class="table-toolbar-title">Inspections, warranties &amp; maintenance due</span></div>
+              <div style="overflow-x:auto"><table>
+                <thead><tr><th>Alert</th><th>Asset</th><th>Detail</th><th></th></tr></thead>
+                <tbody id="assetAlertsBody"></tbody>
+              </table></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== ADMIN HOME ===== -->
+        <div id="page-adminhome" class="page page-home page-admin-home">
+          <div class="home-hero">
+            <div class="home-hero-main">
+              <p class="home-hero-eyebrow">Admin Portal</p>
+              <h1 class="home-hero-title">Administration</h1>
+              <p class="home-hero-subtitle">Jobs, inventory, assets, users &amp; system settings</p>
+            </div>
+            <div class="home-hero-aside">
+              <div class="home-hero-date" id="adminHomeDate">—</div>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon navy" data-icon="users" data-icon-size="24"></div><div><div class="stat-value" id="adminStatUsers">0</div><div class="stat-label">Total Users</div></div></div>
+            <div class="stat-card"><div class="stat-icon blue" data-icon="package" data-icon-size="24"></div><div><div class="stat-value" id="adminStatStock">0</div><div class="stat-label">Stock Items</div></div></div>
+            <div class="stat-card"><div class="stat-icon green" data-icon="clipboard" data-icon-size="24"></div><div><div class="stat-value" id="adminStatJobs">0</div><div class="stat-label">Jobs</div></div></div>
+            <div class="stat-card"><div class="stat-icon purple" data-icon="history" data-icon-size="24"></div><div><div class="stat-value" id="adminStatActivity">0</div><div class="stat-label">Activity Records</div></div></div>
+            <div class="stat-card" onclick="navTo('assetmanagement')" style="cursor:pointer" title="Open Asset Management"><div class="stat-icon orange" data-icon="layers" data-icon-size="24"></div><div><div class="stat-value" id="adminStatAssets">0</div><div class="stat-label">Fixed Assets</div></div></div>
+          </div>
+          <div class="portal-section-head">
+            <h2 class="portal-section-title">Admin modules</h2>
+            <p class="portal-section-desc">System administration, fixed assets, jobs, inventory &amp; users</p>
+          </div>
+          <div class="home-grid admin-modules-grid">
+            <div class="home-card" onclick="navTo('assetmanagement')">
+              <div class="home-card-icon tone-orange" data-icon="layers" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Asset Management</div>
+                <div class="home-card-desc">Fixed assets, maintenance &amp; compliance alerts</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" onclick="navTo('jobmanagement')">
+              <div class="home-card-icon tone-green" data-icon="clipboard" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Job Management</div>
+                <div class="home-card-desc">Create and manage job records</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" onclick="navTo('generalstock')">
+              <div class="home-card-icon tone-teal" data-icon="package" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Inventory Management</div>
+                <div class="home-card-desc">Master stock register &amp; item details</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" onclick="navTo('addstorage')">
+              <div class="home-card-icon tone-violet" data-icon="store" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Storage Locations</div>
+                <div class="home-card-desc">Warehouses, bins &amp; storage areas</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" data-perm="UserManagement" onclick="navTo('adminusers')">
+              <div class="home-card-icon tone-navy" data-icon="users" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">User Management</div>
+                <div class="home-card-desc">Add, edit and remove system users</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" data-perm="SystemSettings" data-perm-mode="edit" onclick="navTo('settings')">
+              <div class="home-card-icon tone-amber" data-icon="settings" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">System Settings</div>
+                <div class="home-card-desc">Configure application preferences</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== ADMIN USERS ===== -->
+        <div id="page-adminusers" class="page">
+          <div class="page-header">
+            <div><div class="page-title">User Management</div><div class="page-subtitle">Full user administration</div></div>
+            <button class="btn btn-primary" onclick="navTo('adduser')">+ Add User</button>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-toolbar">
+              <span class="table-toolbar-title">System Users</span>
+              <div class="search-box" style="width:260px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="adminUserSearch" placeholder="Search users…" oninput="renderAdminUsersTable()" /></div>
+            </div>
+            <div style="overflow-x:auto"><table>
+              <thead><tr><th>SAL #</th><th>Name</th><th>Role</th><th>Status</th><th>LMS</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody id="adminUsersTableBody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ===== SETTINGS ===== -->
+        <div id="page-settings" class="page">
+          <div class="page-header">
+            <div><div class="page-title">System Settings</div><div class="page-subtitle">Configure ManageIT preferences</div></div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">General</div>
+            <div class="settings-row">
+              <div class="settings-row-info"><div class="settings-row-label">Company Name</div><div class="settings-row-desc">Displayed in reports and exports</div></div>
+              <input type="text" class="form-input" id="settingCompany" style="width:260px" value="Storage Management Systems (PTY) Ltd" onchange="saveSetting('company',this.value)" />
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-info"><div class="settings-row-label">Low Stock Threshold</div><div class="settings-row-desc">Alert when quantity falls below this</div></div>
+              <input type="number" class="form-input" id="settingLowStock" style="width:100px" value="5" min="1" onchange="saveSetting('lowStockThreshold',this.value)" />
+            </div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">Notifications</div>
+            <div class="settings-row">
+              <div class="settings-row-info"><div class="settings-row-label">Low Stock Alerts</div><div class="settings-row-desc">Show notifications for low stock items</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="settingLowStockAlert" checked onchange="saveSetting('lowStockAlert',this.checked)" /><span class="toggle-slider"></span></label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-info"><div class="settings-row-label">Activity Logging</div><div class="settings-row-desc">Record all user actions</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="settingActivityLog" checked onchange="saveSetting('activityLog',this.checked)" /><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">Data Management</div>
+            <div class="settings-row">
+              <div class="settings-row-info"><div class="settings-row-label">Export All Data</div><div class="settings-row-desc">Download complete database as JSON</div></div>
+              <button class="btn btn-outline" onclick="exportAllExcel()"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export All (Excel)</span></span></button>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-info"><div class="settings-row-label">Reset to Demo Data</div><div class="settings-row-desc">Restore sample data (will clear existing)</div></div>
+              <button class="btn btn-danger" onclick="if(confirm('Reset all data to demo? This cannot be undone.'))resetToDemo()"><span class="icon-inline"><span data-icon="warning" data-icon-size="15"></span><span>Reset</span></span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== BOM + STOCK CHECK ===== -->
+        <div id="page-bom" class="page">
+          <div class="page-header">
+            <div>
+              <div class="page-title">BOM</div>
+              <div class="page-subtitle">Upload a BOM for one job, check it against the master inventory, then run the stock check.</div>
+            </div>
+          </div>
+          <div class="eng-rule">
+            <strong>The master inventory is not changed by a BOM upload.</strong>
+            The job number below is applied to every part and quantity in the file. Parts that are not on the master are flagged and are not allocated until you add them to the master. Adding them creates the part at quantity 0.
+          </div>
+          <div class="eng-form">
+            <div class="form-group">
+              <label class="form-label" for="bomAssignJob">Job number</label>
+              <input type="text" class="form-input" id="bomAssignJob" list="bomJobList" placeholder="Job number" oninput="Engineering.renderBom()" />
+              <datalist id="bomJobList"></datalist>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bomCatFilter">Master category</label>
+              <select class="form-select" id="bomCatFilter" onchange="Engineering.renderBom()">
+                <option value="">All categories</option>
+                <option>Production Inventory</option>
+                <option>Service Inventory</option>
+                <option>Legacy Inventory</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bomSource">Exported from</label>
+              <select class="form-select" id="bomSource">
+                <option value="">Not set</option>
+                <option value="Parts Library">Parts Library</option>
+                <option value="AutoCAD">AutoCAD</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bomDiscipline">Discipline</label>
+              <select class="form-select" id="bomDiscipline">
+                <option value="Other">Other</option>
+                <option value="C&amp;I">C&amp;I</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">&nbsp;</label>
+              <button type="button" class="btn btn-primary" onclick="document.getElementById('bomImportFile').click()">Upload BOM</button>
+              <input type="file" id="bomImportFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="Engineering.importBom(this.files[0])" />
+            </div>
+          </div>
+          <p class="eng-reason">C&amp;I part numbers are updated in the Parts Library. Other AutoCAD parts are updated in AutoCAD. Other Parts Library parts are updated in the Parts Library. Import columns: part number, description, qty.</p>
+          <div class="eng-kpis" id="bomKpis"></div>
+          <div class="page-header-actions" style="margin-bottom:12px">
+            <button type="button" class="btn btn-outline" onclick="Engineering.addAllUnidentified()">Add unidentified to master</button>
+            <button type="button" class="btn btn-primary" onclick="Engineering.runBomStockCheck()">Run stock check</button>
+            <button type="button" class="btn btn-outline" onclick="Engineering.promptAllocate()">Allocate free stock to job</button>
+          </div>
+          <div class="table-card"><div class="table-wrap"><table>
+            <thead><tr><th>Part #</th><th>Description</th><th>BOM qty</th><th>Free stock</th><th>Status</th><th></th></tr></thead>
+            <tbody id="bomTableBody"></tbody>
+          </table></div></div>
+          <p class="eng-reason">The stock check uses free stock only. Stock already allocated to a job is not counted. Allocating free stock to the job does not create an order transaction and does not change the total quantity.</p>
+          <div class="page-header" style="margin-top:18px">
+            <div>
+              <div class="page-title" style="font-size:18px">History</div>
+              <div class="page-subtitle" id="bomHistoryMeta">Newest first.</div>
+            </div>
+          </div>
+          <div class="table-card"><div class="table-wrap"><table>
+            <thead><tr><th>When</th><th>Job</th><th>What happened</th><th>Detail</th><th></th></tr></thead>
+            <tbody id="bomHistoryBody"></tbody>
+          </table></div></div>
+          <div class="table-card" style="margin-top:12px"><div class="table-wrap"><table>
+            <thead><tr><th>Part #</th><th>Description</th><th>BOM qty</th><th>Free stock</th><th>Short by</th><th>Result</th></tr></thead>
+            <tbody id="bomHistoryLinesBody"></tbody>
+          </table></div></div>
+        </div>
+
+        <!-- ===== PASTEL ALIGNMENT ===== -->
+        <div id="page-pastel" class="page">
+          <div class="page-header">
+            <div>
+              <div class="page-title">Pastel Alignment</div>
+              <div class="page-subtitle">Check Pastel stock against the Parts Library, and clear updates with Carl Henry, before the final Pastel update.</div>
+            </div>
+            <div class="page-header-actions">
+              <button type="button" class="btn btn-outline" onclick="document.getElementById('pastelImportFile').click()">Import Pastel export</button>
+              <input type="file" id="pastelImportFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="Engineering.importPastel(this.files[0])" />
+              <button type="button" class="btn btn-primary" onclick="Engineering.runPastelCheck()">Run library check</button>
+            </div>
+          </div>
+          <div class="eng-rule" id="pastelGate">Final Pastel update stays locked until the earlier steps are done.</div>
+          <div class="eng-timeline" id="pastelTimeline"></div>
+          <div class="page-header" style="margin-top:8px">
+            <div>
+              <div class="page-title" style="font-size:18px">Outstanding updates</div>
+              <div class="page-subtitle">Items still open between you and Carl Henry.</div>
+            </div>
+          </div>
+          <div class="eng-form eng-form-updates">
+            <div class="form-group"><label class="form-label" for="puOwner">Owner</label>
+              <select class="form-select" id="puOwner"><option>Me</option><option>Carl Henry</option></select>
+            </div>
+            <div class="form-group"><label class="form-label" for="puPn">Part number</label><input type="text" class="form-input" id="puPn" /></div>
+            <div class="form-group"><label class="form-label" for="puNote">What still needs to be agreed</label><input type="text" class="form-input" id="puNote" /></div>
+            <div class="form-group"><label class="form-label">&nbsp;</label><button type="button" class="btn btn-primary" onclick="Engineering.addPastelUpdate()">Add update</button></div>
+          </div>
+          <div class="table-card"><div class="table-wrap"><table>
+            <thead><tr><th>Owner</th><th>Part #</th><th>Update</th><th>Status</th><th></th></tr></thead>
+            <tbody id="pastelUpdateBody"></tbody>
+          </table></div></div>
+          <div class="page-header" style="margin-top:18px">
+            <div>
+              <div class="page-title" style="font-size:18px">Pastel vs Parts Library</div>
+              <div class="page-subtitle">This check uses Parts Library lines on the BOM. AutoCAD lines are not included. <span id="pastelCheckMeta"></span></div>
+            </div>
+            <select class="form-select" style="width:180px" id="pastelCheckFilter" onchange="Engineering.pastelFilter=this.value; Engineering.renderPastelChecks()">
+              <option value="">All results</option>
+              <option>Matched</option>
+              <option>Pastel only</option>
+              <option>Library only</option>
+            </select>
+          </div>
+          <div class="table-card"><div class="table-wrap"><table>
+            <thead><tr><th>Part #</th><th>Description</th><th>Pastel qty</th><th>Library qty</th><th>Result</th></tr></thead>
+            <tbody id="pastelCheckBody"></tbody>
+          </table></div></div>
+        </div>
+
+        <!-- ===== PENDING APPROVALS ===== -->
+        <div id="page-approvals" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Pending Approvals</div><div class="page-subtitle">Review and authorize adjustment requests</div></div>
+            <span class="record-count"><strong id="approvalsPendingCount">0</strong> pending</span>
+          </div>
+          <div class="table-card"><div class="table-wrap"><table>
+            <thead><tr><th>Requested</th><th>Type</th><th>Stock #</th><th>Description</th><th>Qty Change</th><th>Requested By</th><th>Actions</th></tr></thead>
+            <tbody id="approvalsTableBody"><tr class="table-empty"><td colspan="7">No pending approvals</td></tr></tbody>
+          </table></div></div>
+        </div>
+
+        <!-- ===== ROLE PERMISSIONS MATRIX ===== -->
+        <div id="page-rolematrix" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Role Permissions</div>
+              <div class="perm-legend">
+                <span class="perm-legend-label">Legend:</span>
+                <span class="perm-badge perm-full">Full</span>
+                <span class="perm-badge perm-view">View</span>
+                <span class="perm-badge perm-edit">Edit</span>
+                <span class="perm-badge perm-approve">Approve</span>
+                <span class="perm-badge perm-request">Request</span>
+                <span class="perm-badge perm-none">None</span>
+              </div>
+            </div>
+          </div>
+          <div class="table-card"><div class="table-wrap" style="overflow-x:auto"><table>
+            <thead id="roleMatrixHead"></thead>
+            <tbody id="roleMatrixBody"></tbody>
+          </table></div></div>
+        </div>
+
+      </main><!-- end main-content -->
+    </div><!-- end app-body -->
+  </div><!-- end app-layout -->
+</div><!-- end screen-app -->
+
+<!-- ===================== STOCK REGISTER MODAL ===================== -->
+<div id="stockRegisterModal" class="modal-overlay">
+  <div class="modal" style="width:860px;max-width:98vw">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="regModalTitle">Stock Register</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px" id="regModalSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeRegisterModal()">×</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <!-- Summary strip -->
+      <div id="regSummaryStrip" style="display:flex;gap:0;border-bottom:1px solid var(--border)"></div>
+      <!-- Transaction table -->
+      <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
+        <table>
+          <thead><tr>
+            <th>Date/Time</th><th>Type</th><th>Qty</th><th>Balance After</th><th>Location</th><th>Job</th><th>PO / Ref</th><th>User</th>
+          </tr></thead>
+          <tbody id="regTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="exportExcel('stock')"><span class="icon-inline"><span data-icon="download" data-icon-size="14"></span><span>Export Excel</span></span></button>
+      <button class="btn btn-outline" onclick="closeRegisterModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== IMPORT MODAL ===================== -->
+<div id="importModal" class="modal-overlay">
+  <div class="modal" style="width:940px;max-width:98vw">
+    <div class="modal-header">
+      <span class="modal-title" id="importModalTitle"><span class="icon-inline"><span data-icon="upload" data-icon-size="18"></span><span>Import Stock from Excel / CSV</span></span></span>
+      <button class="modal-close" onclick="closeImportModal()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step 1: File pick -->
+      <div id="importStep1">
+        <div id="importDropzone" style="border:2px dashed var(--border);border-radius:var(--radius);padding:40px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s"
+             onclick="document.getElementById('importFileInput').click()"
+             ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+             ondragleave="this.style.borderColor='var(--border)'"
+             ondrop="handleImportDrop(event)">
+          <div style="margin-bottom:12px" data-icon="chart" data-icon-size="40"></div>
+          <div style="font-weight:700;color:var(--navy);margin-bottom:6px">Drop your spreadsheet file here</div>
+          <div style="color:var(--text-muted);font-size:13px">Excel (.xlsx, .xls), CSV, TSV, ODS, JSON, TXT — or any spreadsheet format</div>
+          <div id="importFileName" style="margin-top:12px;font-size:13px;color:var(--blue);font-weight:600"></div>
+        </div>
+        <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv,.tsv,.ods,.json,.txt,.xml,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/tab-separated-values,application/json" style="display:none" onchange="handleImportFile(this)" />
+
+        <!-- Import type -->
+        <div id="importTypePicker" style="margin-top:16px">
+          <label class="form-label">Import type</label>
+          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+              <input type="radio" name="importType" value="stock" checked onchange="setImportType(this.value)" /> Inventory Items
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+              <input type="radio" name="importType" value="jobs" onchange="setImportType(this.value)" /> Jobs
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+              <input type="radio" name="importType" value="users" onchange="setImportType(this.value)" /> Users
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+              <input type="radio" name="importType" value="storage" onchange="setImportType(this.value)" /> Storage Locations
+            </label>
+          </div>
+        </div>
+
+        <!-- Download template -->
+        <div style="margin-top:14px;padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span style="font-size:12px;color:var(--text-muted)">Need the correct column layout?</span>
+          <button type="button" class="btn btn-outline btn-sm" onclick="downloadImportTemplate()"><span class="icon-inline"><span data-icon="download" data-icon-size="14"></span><span>Download Template</span></span></button>
+        </div>
+
+        <!-- Duplicate handling -->
+        <div style="margin-top:12px">
+          <label class="form-label">If a record already exists (same Inventory # / Job # / SAL # / Location name)</label>
+          <select class="form-select" id="importDupMode" style="margin-top:6px">
+            <option value="skip">Skip — keep existing record</option>
+            <option value="update">Update — overwrite existing record</option>
+            <option value="add">Add anyway — create duplicate</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 2: Column mapping + row selection -->
+      <div id="importStep2" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div>
+            <div style="font-weight:700;color:var(--navy)">Map your columns</div>
+            <div style="font-size:12px;color:var(--text-muted)" id="importSheetInfo"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="importGoBack()">← Back</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="importMappingGrid"></div>
+
+        <div class="import-review-bar">
+          <div>
+            <div class="import-review-title">Select rows to import</div>
+            <div class="import-review-meta"><span id="importSelectedCount">0 of 0 selected</span> · <span id="importPreviewCount">0</span> rows in file</div>
+          </div>
+          <div class="import-review-actions">
+            <button type="button" class="btn btn-outline btn-sm" onclick="importSelectAll(true)">Select all</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="importSelectAll(false)">Clear all</button>
+            <label class="import-review-toggle"><input type="checkbox" id="importHideInvalid" onchange="renderImportPreview()" /> Hide invalid</label>
+          </div>
+        </div>
+        <div class="import-review-table">
+          <table>
+            <thead id="importPreviewHead"></thead>
+            <tbody id="importPreviewBody"></tbody>
+          </table>
+        </div>
+        <div class="import-rules-note">
+          Values follow the same rules in Excel and SQL — numbers accept <strong>1234,56</strong> or <strong>1234.56</strong> and are stored as <strong>1234.56</strong>; text may only use letters, digits, spaces and <strong>. , - _ / ( ) &amp; # ' + : %</strong>
+        </div>
+      </div>
+
+      <!-- Step 3: Result -->
+      <div id="importStep3" class="hidden">
+        <div style="text-align:center;padding:20px">
+          <div style="margin-bottom:12px" id="importResultIcon" data-icon="check" data-icon-size="48"></div>
+          <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px" id="importResultTitle"></div>
+          <div style="font-size:13px;color:var(--text-muted)" id="importResultDetail"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeImportModal()">Close</button>
+      <button class="btn btn-primary hidden" id="importNextBtn" onclick="importNext()">Next →</button>
+      <button class="btn btn-success hidden" id="importRunBtn" onclick="runImport()"><span class="icon-inline"><span data-icon="upload" data-icon-size="15"></span><span>Import</span></span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Reconciliation approval modal -->
+<div id="reconApprovalModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="width:900px;max-width:98vw">
+    <div class="modal-header">
+      <span class="modal-title">Review quantity adjustments</span>
+      <button class="modal-close" type="button" onclick="AuditWF.closeModal('reconApprovalModal')">×</button>
+    </div>
+    <div class="modal-body" style="max-height:60vh;overflow:auto">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Approve or reject each variance. A reason is required for every adjustment before you can save.</p>
+      <table><thead><tr><th>Stock #</th><th>Part #</th><th>Master</th><th>Final count</th><th>Variance</th><th>Reason <span style="color:var(--red)">*</span></th><th>Decision</th></tr></thead>
+      <tbody id="reconApprovalBody"></tbody></table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="AuditWF.closeModal('reconApprovalModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="AuditWF.saveApprovals()">Save adjustments</button>
+    </div>
+  </div>
+</div>
+
+<!-- Count sheet import verification modal -->
+<div id="countImportModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="width:780px;max-width:95vw">
+    <div class="modal-header">
+      <span class="modal-title" id="countImportModalTitle">Count sheet import</span>
+      <button class="modal-close" type="button" onclick="AuditWF.closeModal('countImportModal')">×</button>
+    </div>
+    <div class="modal-body" style="max-height:65vh;overflow:auto">
+      <p id="countImportSummary" style="font-size:13px;color:var(--text-muted);margin-bottom:12px"></p>
+      <table>
+        <thead><tr><th>Stock #</th><th>Part #</th><th>Description</th><th>Sheet qty</th><th>Status</th></tr></thead>
+        <tbody id="countImportBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="AuditWF.closeModal('countImportModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reconciliation report preview -->
+<div id="reconReportModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="width:800px;max-width:95vw">
+    <div class="modal-header">
+      <span class="modal-title" id="reconReportPreviewTitle">Reconciliation Report</span>
+      <button class="modal-close" type="button" onclick="AuditWF.closeModal('reconReportModal')">×</button>
+    </div>
+    <div class="modal-body report-preview-body" id="reconReportPreviewBody" style="max-height:70vh;overflow:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="AuditWF.closeModal('reconReportModal')">Close</button>
+      <button class="btn btn-primary" onclick="window.print()">Print / PDF</button>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js?v=20261016lmsportal"></script>
+<script src="permissions.js?v=20260728perm"></script>
+<script src="audit-workflow.js?v=20260922dash"></script>
+<script src="api.js?v=20261016lmsaccess"></script>
+<script src="ui.js?v=20260729jobtype"></script>
+<script src="excel-export.js?v=20260922count"></script>
+<script src="asset-management.js?v=20260729"></script>
+<script src="engineering.js?v=20261027clean"></script>
+<script src="app.js?v=20261027clean"></script>
+</body>
+</html>
