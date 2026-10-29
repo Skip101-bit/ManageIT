@@ -279,7 +279,7 @@ const Engineering = {
       }
       DB.bomLines = DB.bomLines.filter(l => l.jobNumber !== job).concat(imported);
       const unknown = imported.filter(l => !this.onMaster(l.partNumber)).length;
-      this.addHistory('BOM uploaded', job, `${imported.length} parts assigned to ${job}. ${unknown} are not on the master. Master quantities were not changed.`, []);
+      this.addHistory('BOM uploaded', job, `${imported.length} parts assigned to ${job}. ${unknown} ${unknown === 1 ? 'is' : 'are'} not on the master. Master quantities were not changed.`, []);
       const changed = Object.keys(before).some(id => {
         const item = DB.stock.find(s => s.id === id);
         return !item || this.num(item.quantity) !== before[id];
@@ -744,3 +744,5 @@ const Engineering = {
     this.renderPastel();
   }
 };
+
+window.Engineering = Engineering;
