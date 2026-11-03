@@ -844,6 +844,7 @@ window.AuditWF = AuditWF;
 
 function navFromHome(pageId, menuKey) {
   if (menuKey === 'stockit') enterPortal('stockit', pageId);
+  else if (menuKey === 'master') enterPortal('master', pageId);
   else if (menuKey === 'admin') enterPortal('admin', pageId);
   else if (menuKey === 'reports') enterPortal('reports', pageId);
   else navTo(pageId);

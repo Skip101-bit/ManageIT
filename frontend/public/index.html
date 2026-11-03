@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20261016lmsportal" />
+  <link rel="stylesheet" href="styles.css?v=20261103master" />
   <script src="config.js"></script>
   <!-- SheetJS for Excel import (.xlsx, .xls, .csv, .ods, etc.) -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -143,28 +143,38 @@
           </div>
         </div>
 
-        <!-- Admin portal nav -->
-        <div class="sidebar-section portal-nav hidden" id="nav-portal-admin" data-perm-any="UserManagement,AssetManagement">
-          <div class="sidebar-section-label">Admin</div>
-          <div class="nav-item" data-page="adminhome" onclick="navTo('adminhome',this)">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M21 12h-2M5 12H3M12 3V1M12 23v-2"/></svg>
-            Admin Home
+        <!-- Master portal nav -->
+        <div class="sidebar-section portal-nav hidden" id="nav-portal-master" data-perm-any="StockNumber,StockLocation,AssetManagement">
+          <div class="sidebar-section-label">Master</div>
+          <div class="nav-item" data-page="masterhome" onclick="navTo('masterhome',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Master Home
           </div>
+          <div class="sidebar-section-label">Master Registers</div>
           <div class="nav-item" data-page="jobmanagement" onclick="navTo('jobmanagement',this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
             Job Management
           </div>
-          <div class="nav-item" data-page="generalstock" onclick="navTo('generalstock',this)">
+          <div class="nav-item" data-perm="StockNumber" data-page="generalstock" onclick="navTo('generalstock',this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             Inventory Management
           </div>
-          <div class="nav-item" data-page="addstorage" onclick="navTo('addstorage',this)">
+          <div class="nav-item" data-perm="StockLocation" data-page="addstorage" onclick="navTo('addstorage',this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
             Storage Locations
           </div>
-          <div class="nav-item" data-page="assetmanagement" onclick="navTo('assetmanagement',this)">
+          <div class="nav-item" data-perm="AssetManagement" data-page="assetmanagement" onclick="navTo('assetmanagement',this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
             Asset Management
+          </div>
+        </div>
+
+        <!-- Admin portal nav -->
+        <div class="sidebar-section portal-nav hidden" id="nav-portal-admin" data-perm-any="UserManagement,SystemSettings">
+          <div class="sidebar-section-label">Admin</div>
+          <div class="nav-item" data-page="adminhome" onclick="navTo('adminhome',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M21 12h-2M5 12H3M12 3V1M12 23v-2"/></svg>
+            Admin Home
           </div>
           <div class="sidebar-section-label">User Management</div>
           <div class="nav-item" data-page="adminusers" onclick="navTo('adminusers',this)">
@@ -236,7 +246,7 @@
             <div class="home-hero-main">
               <p class="home-hero-eyebrow">Storage Management Systems · ManageIT</p>
               <h1 class="home-hero-title">Welcome back, <span id="homeUserName">—</span></h1>
-              <p class="home-hero-subtitle">Select a portal to manage inventory, reports, administration, or LMS</p>
+              <p class="home-hero-subtitle">Select a portal to manage inventory, master registers, reports, administration, or LMS</p>
             </div>
             <div class="home-hero-aside">
               <div class="home-hero-date" id="homeDate">—</div>
@@ -261,6 +271,19 @@
               </div>
               <span class="portal-card-arrow" aria-hidden="true">›</span>
             </div>
+            <div class="portal-card portal-card-master" data-perm-any="StockNumber,StockLocation,AssetManagement" onclick="enterPortal('master')">
+              <div class="portal-card-icon tone-amber" data-icon="database" data-icon-size="28"></div>
+              <div class="portal-card-body">
+                <div class="portal-card-title">Master</div>
+                <div class="portal-card-desc">Master registers for jobs, inventory, storage locations &amp; assets</div>
+                <div class="portal-card-tags">
+                  <span class="portal-tag">Jobs</span>
+                  <span class="portal-tag">Inventory</span>
+                  <span class="portal-tag">Assets</span>
+                </div>
+              </div>
+              <span class="portal-card-arrow" aria-hidden="true">›</span>
+            </div>
             <div class="portal-card portal-card-reports" data-perm="ViewReports" onclick="enterPortal('reports')">
               <div class="portal-card-icon tone-violet" data-icon="trend-up" data-icon-size="28"></div>
               <div class="portal-card-body">
@@ -273,15 +296,15 @@
               </div>
               <span class="portal-card-arrow" aria-hidden="true">›</span>
             </div>
-            <div class="portal-card portal-card-admin" data-perm-any="UserManagement,AssetManagement" onclick="enterPortal('admin')">
+            <div class="portal-card portal-card-admin" data-perm-any="UserManagement,SystemSettings" onclick="enterPortal('admin')">
               <div class="portal-card-icon tone-navy" data-icon="settings" data-icon-size="28"></div>
               <div class="portal-card-body">
                 <div class="portal-card-title">Admin</div>
-                <div class="portal-card-desc">Jobs, inventory, assets, user management &amp; settings</div>
+                <div class="portal-card-desc">User management, role permissions &amp; system settings</div>
                 <div class="portal-card-tags">
-                  <span class="portal-tag">Jobs</span>
-                  <span class="portal-tag">Assets</span>
                   <span class="portal-tag">Users</span>
+                  <span class="portal-tag">Roles</span>
+                  <span class="portal-tag">Settings</span>
                 </div>
               </div>
               <span class="portal-card-arrow" aria-hidden="true">›</span>
@@ -483,14 +506,14 @@
                 <div class="quick-card-desc">Move inventory between storage locations</div>
               </div>
             </div>
-            <div class="quick-card" onclick="enterPortal('admin','jobmanagement')">
+            <div class="quick-card" onclick="enterPortal('master','jobmanagement')">
               <div class="quick-card-icon" data-icon="clipboard" data-icon-size="22"></div>
               <div>
                 <div class="quick-card-title">Add New Job</div>
                 <div class="quick-card-desc">Create a new job record</div>
               </div>
             </div>
-            <div class="quick-card" onclick="enterPortal('admin','generalstock')">
+            <div class="quick-card" onclick="enterPortal('master','generalstock')">
               <div class="quick-card-icon" data-icon="package" data-icon-size="22"></div>
               <div>
                 <div class="quick-card-title">Inventory Management</div>
@@ -1435,38 +1458,29 @@
           </div>
         </div>
 
-        <!-- ===== ADMIN HOME ===== -->
-        <div id="page-adminhome" class="page page-home page-admin-home">
+        <!-- ===== MASTER HOME ===== -->
+        <div id="page-masterhome" class="page page-home page-master-home">
           <div class="home-hero">
             <div class="home-hero-main">
-              <p class="home-hero-eyebrow">Admin Portal</p>
-              <h1 class="home-hero-title">Administration</h1>
-              <p class="home-hero-subtitle">Jobs, inventory, assets, users &amp; system settings</p>
+              <p class="home-hero-eyebrow">Master Portal</p>
+              <h1 class="home-hero-title">Master Registers</h1>
+              <p class="home-hero-subtitle">Jobs, inventory, storage locations &amp; fixed assets</p>
             </div>
             <div class="home-hero-aside">
-              <div class="home-hero-date" id="adminHomeDate">—</div>
+              <div class="home-hero-date" id="masterHomeDate">—</div>
             </div>
           </div>
           <div class="stats-grid">
-            <div class="stat-card"><div class="stat-icon navy" data-icon="users" data-icon-size="24"></div><div><div class="stat-value" id="adminStatUsers">0</div><div class="stat-label">Total Users</div></div></div>
-            <div class="stat-card"><div class="stat-icon blue" data-icon="package" data-icon-size="24"></div><div><div class="stat-value" id="adminStatStock">0</div><div class="stat-label">Stock Items</div></div></div>
-            <div class="stat-card"><div class="stat-icon green" data-icon="clipboard" data-icon-size="24"></div><div><div class="stat-value" id="adminStatJobs">0</div><div class="stat-label">Jobs</div></div></div>
-            <div class="stat-card"><div class="stat-icon purple" data-icon="history" data-icon-size="24"></div><div><div class="stat-value" id="adminStatActivity">0</div><div class="stat-label">Activity Records</div></div></div>
-            <div class="stat-card" onclick="navTo('assetmanagement')" style="cursor:pointer" title="Open Asset Management"><div class="stat-icon orange" data-icon="layers" data-icon-size="24"></div><div><div class="stat-value" id="adminStatAssets">0</div><div class="stat-label">Fixed Assets</div></div></div>
+            <div class="stat-card" onclick="navTo('jobmanagement')" style="cursor:pointer" title="Open Job Management"><div class="stat-icon green" data-icon="clipboard" data-icon-size="24"></div><div><div class="stat-value" id="masterStatJobs">0</div><div class="stat-label">Jobs</div></div></div>
+            <div class="stat-card" data-perm="StockNumber" onclick="navTo('generalstock')" style="cursor:pointer" title="Open Inventory Management"><div class="stat-icon blue" data-icon="package" data-icon-size="24"></div><div><div class="stat-value" id="masterStatStock">0</div><div class="stat-label">Inventory Items</div></div></div>
+            <div class="stat-card" data-perm="StockLocation" onclick="navTo('addstorage')" style="cursor:pointer" title="Open Storage Locations"><div class="stat-icon purple" data-icon="store" data-icon-size="24"></div><div><div class="stat-value" id="masterStatStorage">0</div><div class="stat-label">Storage Locations</div></div></div>
+            <div class="stat-card" data-perm="AssetManagement" onclick="navTo('assetmanagement')" style="cursor:pointer" title="Open Asset Management"><div class="stat-icon orange" data-icon="layers" data-icon-size="24"></div><div><div class="stat-value" id="masterStatAssets">0</div><div class="stat-label">Fixed Assets</div></div></div>
           </div>
           <div class="portal-section-head">
-            <h2 class="portal-section-title">Admin modules</h2>
-            <p class="portal-section-desc">System administration, fixed assets, jobs, inventory &amp; users</p>
+            <h2 class="portal-section-title">Master registers</h2>
+            <p class="portal-section-desc">Jobs, master inventory register, storage locations &amp; fixed assets</p>
           </div>
-          <div class="home-grid admin-modules-grid">
-            <div class="home-card" onclick="navTo('assetmanagement')">
-              <div class="home-card-icon tone-orange" data-icon="layers" data-icon-size="22"></div>
-              <div class="home-card-body">
-                <div class="home-card-title">Asset Management</div>
-                <div class="home-card-desc">Fixed assets, maintenance &amp; compliance alerts</div>
-              </div>
-              <span class="home-card-arrow" aria-hidden="true">›</span>
-            </div>
+          <div class="home-grid master-modules-grid">
             <div class="home-card" onclick="navTo('jobmanagement')">
               <div class="home-card-icon tone-green" data-icon="clipboard" data-icon-size="22"></div>
               <div class="home-card-body">
@@ -1475,7 +1489,7 @@
               </div>
               <span class="home-card-arrow" aria-hidden="true">›</span>
             </div>
-            <div class="home-card" onclick="navTo('generalstock')">
+            <div class="home-card" data-perm="StockNumber" onclick="navTo('generalstock')">
               <div class="home-card-icon tone-teal" data-icon="package" data-icon-size="22"></div>
               <div class="home-card-body">
                 <div class="home-card-title">Inventory Management</div>
@@ -1483,7 +1497,7 @@
               </div>
               <span class="home-card-arrow" aria-hidden="true">›</span>
             </div>
-            <div class="home-card" onclick="navTo('addstorage')">
+            <div class="home-card" data-perm="StockLocation" onclick="navTo('addstorage')">
               <div class="home-card-icon tone-violet" data-icon="store" data-icon-size="22"></div>
               <div class="home-card-body">
                 <div class="home-card-title">Storage Locations</div>
@@ -1491,6 +1505,39 @@
               </div>
               <span class="home-card-arrow" aria-hidden="true">›</span>
             </div>
+            <div class="home-card" data-perm="AssetManagement" onclick="navTo('assetmanagement')">
+              <div class="home-card-icon tone-orange" data-icon="layers" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Asset Management</div>
+                <div class="home-card-desc">Fixed assets, maintenance &amp; compliance alerts</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== ADMIN HOME ===== -->
+        <div id="page-adminhome" class="page page-home page-admin-home">
+          <div class="home-hero">
+            <div class="home-hero-main">
+              <p class="home-hero-eyebrow">Admin Portal</p>
+              <h1 class="home-hero-title">Administration</h1>
+              <p class="home-hero-subtitle">Users, role permissions &amp; system settings</p>
+            </div>
+            <div class="home-hero-aside">
+              <div class="home-hero-date" id="adminHomeDate">—</div>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon navy" data-icon="users" data-icon-size="24"></div><div><div class="stat-value" id="adminStatUsers">0</div><div class="stat-label">Total Users</div></div></div>
+            <div class="stat-card"><div class="stat-icon green" data-icon="user" data-icon-size="24"></div><div><div class="stat-value" id="adminStatActiveUsers">0</div><div class="stat-label">Active Users</div></div></div>
+            <div class="stat-card"><div class="stat-icon purple" data-icon="history" data-icon-size="24"></div><div><div class="stat-value" id="adminStatActivity">0</div><div class="stat-label">Activity Records</div></div></div>
+          </div>
+          <div class="portal-section-head">
+            <h2 class="portal-section-title">Admin modules</h2>
+            <p class="portal-section-desc">System administration, users &amp; access control</p>
+          </div>
+          <div class="home-grid admin-modules-grid">
             <div class="home-card" data-perm="UserManagement" onclick="navTo('adminusers')">
               <div class="home-card-icon tone-navy" data-icon="users" data-icon-size="22"></div>
               <div class="home-card-body">
@@ -1499,11 +1546,27 @@
               </div>
               <span class="home-card-arrow" aria-hidden="true">›</span>
             </div>
+            <div class="home-card" data-perm="UserManagement" onclick="navTo('rolematrix')">
+              <div class="home-card-icon tone-indigo" data-icon="key" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Role Permissions</div>
+                <div class="home-card-desc">Review access levels for each role</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
             <div class="home-card" data-perm="SystemSettings" data-perm-mode="edit" onclick="navTo('settings')">
               <div class="home-card-icon tone-amber" data-icon="settings" data-icon-size="22"></div>
               <div class="home-card-body">
                 <div class="home-card-title">System Settings</div>
                 <div class="home-card-desc">Configure application preferences</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" data-perm-any="StockNumber,StockLocation,AssetManagement" onclick="enterPortal('master')">
+              <div class="home-card-icon tone-orange" data-icon="database" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Master Registers</div>
+                <div class="home-card-desc">Open the Master portal for jobs, inventory, storage &amp; assets</div>
               </div>
               <span class="home-card-arrow" aria-hidden="true">›</span>
             </div>
@@ -1927,14 +1990,14 @@
   </div>
 </div>
 
-<script src="icons.js?v=20261016lmsportal"></script>
+<script src="icons.js?v=20261103master"></script>
 <script src="permissions.js?v=20260728perm"></script>
-<script src="audit-workflow.js?v=20260922dash"></script>
+<script src="audit-workflow.js?v=20261103master"></script>
 <script src="api.js?v=20261016lmsaccess"></script>
 <script src="ui.js?v=20260729jobtype"></script>
 <script src="excel-export.js?v=20260922count"></script>
 <script src="asset-management.js?v=20260729"></script>
 <script src="engineering.js?v=20261029fix"></script>
-<script src="app.js?v=20261027clean"></script>
+<script src="app.js?v=20261103master"></script>
 </body>
 </html>

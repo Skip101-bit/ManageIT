@@ -2035,6 +2035,7 @@ body.portal-hub .page-portal-hub {
 }
 .portal-card-stockit::before { background: linear-gradient(90deg, #0d9488, #14b8a6); }
 .portal-card-reports::before { background: linear-gradient(90deg, #7c3aed, #8b5cf6); }
+.portal-card-master::before { background: linear-gradient(90deg, #d97706, #f59e0b); }
 .portal-card-admin::before { background: linear-gradient(90deg, var(--navy), var(--blue)); }
 .portal-card-lms::before { background: linear-gradient(90deg, #047857, #10b981); }
 .portal-card-lms.hidden { display: none !important; }
@@ -2062,6 +2063,7 @@ body.portal-hub .page-portal-hub {
 .portal-card-icon svg { width: 28px; height: 28px; stroke: #fff; }
 .portal-card-icon.tone-teal { background: linear-gradient(135deg, #0d9488, #14b8a6); }
 .portal-card-icon.tone-violet { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+.portal-card-icon.tone-amber { background: linear-gradient(135deg, #d97706, #f59e0b); }
 .portal-card-icon.tone-navy { background: linear-gradient(135deg, var(--navy), var(--navy-light)); }
 .portal-card-icon.tone-green { background: linear-gradient(135deg, #059669, #10b981); }
 
@@ -2111,6 +2113,7 @@ body.portal-hub .page-portal-hub {
 .portal-grid .portal-card:nth-child(2) { animation-delay: 0.12s; }
 .portal-grid .portal-card:nth-child(3) { animation-delay: 0.18s; }
 .portal-grid .portal-card:nth-child(4) { animation-delay: 0.24s; }
+.portal-grid .portal-card:nth-child(5) { animation-delay: 0.30s; }
 
 @keyframes portalCardIn {
   from { opacity: 0; transform: translateY(12px); }

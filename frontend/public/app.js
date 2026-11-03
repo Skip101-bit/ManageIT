@@ -695,11 +695,12 @@ let activePortal = null;
 
 const PORTAL_PAGES = {
   stockit: ['stockithome', 'inventorylist', 'jobstock', 'transactions', 'audit', 'reconciliation', 'bom', 'pastel', 'approvals'],
-  admin: ['adminhome', 'adminusers', 'settings', 'rolematrix', 'jobmanagement', 'generalstock', 'addstorage', 'assetmanagement', 'usermanagement', 'adduser'],
+  master: ['masterhome', 'jobmanagement', 'generalstock', 'addstorage', 'assetmanagement'],
+  admin: ['adminhome', 'adminusers', 'settings', 'rolematrix', 'usermanagement', 'adduser'],
   reports: ['dashboard', 'quickactions', 'kpi', 'exports', 'useractivity', 'workactivity']
 };
 
-const PORTAL_LANDING = { stockit: 'stockithome', admin: 'adminhome', reports: 'dashboard' };
+const PORTAL_LANDING = { stockit: 'stockithome', master: 'masterhome', admin: 'adminhome', reports: 'dashboard' };
 
 function invLabel(text) {
   if (!text) return text;
@@ -751,7 +752,7 @@ function applyPortalUI() {
         nav.classList.add('portal-nav-animate');
       });
     }
-    const titles = { stockit: 'Stock-IT', admin: 'Admin', reports: 'Reports' };
+    const titles = { stockit: 'Stock-IT', master: 'Master', admin: 'Admin', reports: 'Reports' };
     const titleEl = document.getElementById('sidebarPortalTitle');
     if (titleEl) titleEl.textContent = titles[activePortal] || activePortal;
   }
@@ -818,7 +819,8 @@ function navTo(pageId, navEl, skipPortalInfer) {
     approvals: 'StockAdjustments', rolematrix: 'UserManagement'
   };
   const pagePermAny = {
-    adminhome: ['UserManagement', 'AssetManagement']
+    adminhome: ['UserManagement', 'SystemSettings'],
+    masterhome: ['StockNumber', 'StockLocation', 'AssetManagement']
   };
   const requiredAny = pagePermAny[pageId];
   if (requiredAny && currentUser && !requiredAny.some(code => ManageITPerms.canView(code))) {
@@ -869,6 +871,7 @@ function navTo(pageId, navEl, skipPortalInfer) {
     audit: 'Inventory Audit', usermanagement: 'User Management',
     adduser: 'Add / Edit User', kpi: 'KPI Reports', exports: 'Export Reports',
     useractivity: 'User Activity', workactivity: 'Work Activity',
+    masterhome: 'Master Registers',
     adminhome: 'Admin Dashboard', adminusers: 'User Management', settings: 'System Settings',
     approvals: 'Pending Approvals', rolematrix: 'Role Permissions'
   };
@@ -911,6 +914,7 @@ function refreshPage(pageId) {
     case 'kpi': refreshKPIs(); break;
     case 'useractivity': renderActivityTable(); break;
     case 'workactivity': renderWorkActivityTable(); break;
+    case 'masterhome': renderMasterHome(); break;
     case 'adminhome': renderAdminHome(); break;
     case 'adminusers': renderAdminUsersTable(); break;
     case 'approvals': renderApprovalsTable(); break;
@@ -3312,15 +3316,25 @@ function renderWorkActivityTable() {
 }
 
 // ============================================
+// MASTER HOME
+// ============================================
+function renderMasterHome() {
+  document.getElementById('masterStatJobs').textContent = DB.jobs.length;
+  document.getElementById('masterStatStock').textContent = DB.stock.length;
+  document.getElementById('masterStatStorage').textContent = DB.storageLocations.length || DEFAULT_STORAGE_LOCATIONS.length;
+  document.getElementById('masterStatAssets').textContent = (DB.assets || []).length;
+  const dateEl = document.getElementById('masterHomeDate');
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  if (typeof hydrateIcons === 'function') hydrateIcons(document.getElementById('page-masterhome'));
+}
+
+// ============================================
 // ADMIN HOME
 // ============================================
 function renderAdminHome() {
   document.getElementById('adminStatUsers').textContent = DB.users.length;
-  document.getElementById('adminStatStock').textContent = DB.stock.length;
-  document.getElementById('adminStatJobs').textContent = DB.jobs.length;
+  document.getElementById('adminStatActiveUsers').textContent = DB.users.filter(u => u.status === 'Active').length;
   document.getElementById('adminStatActivity').textContent = DB.activity.length;
-  const assetStat = document.getElementById('adminStatAssets');
-  if (assetStat) assetStat.textContent = (DB.assets || []).length;
   const dateEl = document.getElementById('adminHomeDate');
   if (dateEl) dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   if (typeof hydrateIcons === 'function') hydrateIcons(document.getElementById('page-adminhome'));
