@@ -1569,6 +1569,12 @@ function renderTransactionLists() {
 }
 
 // ---- Shared helpers ----
+// Chromium steps a focused number input on mouse wheel, so scrolling past a quantity field silently changes it.
+document.addEventListener('wheel', e => {
+  const t = e.target;
+  if (t instanceof HTMLInputElement && t.type === 'number' && t === document.activeElement) t.blur();
+}, { passive: true });
+
 function txStatusBar(elId, item, mode = 'bookin') {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -1583,6 +1589,7 @@ function txStatusBar(elId, item, mode = 'bookin') {
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
       <div><span style="color:var(--text-muted)">Inventory #</span> <strong>${item.stockNumber}</strong></div>
+      ${item.jobNumber ? `<div><span style="color:var(--text-muted)">Allocated to job</span> <strong style="color:var(--blue)">${UI.esc(item.jobNumber)}</strong></div>` : ''}
       <div><span style="color:var(--text-muted)">Current Qty</span> <strong style="color:${isLow ? 'var(--danger)' : '#27ae60'}">${item.quantity}</strong></div>
       <div><span style="color:var(--text-muted)">Location</span> <strong>${item.storageLocation || '—'}</strong></div>
       ${item.trayBin ? `<div><span style="color:var(--text-muted)">Bin</span> <strong>${item.trayBin}</strong></div>` : ''}
@@ -2379,7 +2386,7 @@ function renderTxHistory() {
   body.innerHTML = items.map(t => `
     <tr>
       <td style="white-space:nowrap">${fmtDateTime(t.timestamp)}</td>
-      <td><span class="list-item-badge ${typeColor(t.type)}">${displayType(t.type)}</span></td>
+      <td><span class="list-item-badge ${typeColor(t.type)}">${displayType(t)}</span></td>
       <td><strong>${t.stockNumber || '—'}</strong></td>
       <td>${t.partDescription || '—'}</td>
       <td><strong style="color:${txQtyColor(t)}">${txQtyDisplay(t)}</strong></td>
