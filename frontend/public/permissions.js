@@ -184,10 +184,11 @@ const ManageITPerms = (() => {
       fStockJobNum:         'StockNumber',
       fJobCatStock:         'StockCategory'
     };
+    const canSave = canEdit('StockNumber');
     Object.entries(fieldMap).forEach(([id, code]) => {
       const el = document.getElementById(id);
       if (!el) return;
-      const editable = canEdit(code);
+      const editable = canSave && canEdit(code);
       el.disabled = !editable;
       el.readOnly = !editable;
       if (!editable) el.title = 'View only for your role';

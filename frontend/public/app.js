@@ -337,6 +337,21 @@ function show(el) { if (el) el.classList.remove('hidden'); }
 function hide(el) { if (el) el.classList.add('hidden'); }
 function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 function setVal(id, v) { const el = document.getElementById(id); if (el) el.value = v ?? ''; }
+/** Set a <select> value, adding the value as an option first if it is not listed, so saving the form does not silently clear it. */
+function setSelectValueKeep(id, v, label) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const value = v ?? '';
+  if (el.tagName === 'SELECT') [...el.options].filter(o => o.dataset.kept && o.value !== value).forEach(o => o.remove());
+  if (value && el.tagName === 'SELECT' && ![...el.options].some(o => o.value === value)) {
+    const opt = document.createElement('option');
+    opt.dataset.kept = '1';
+    opt.value = value;
+    opt.textContent = label || `${value} (not in list)`;
+    el.appendChild(opt);
+  }
+  el.value = value;
+}
 function getText(id) { return val(id); }
 
 /** Normalize SAL for lookup (trim, remove whitespace). Matches dbo.Users.SALNumber VARCHAR(20). */
@@ -948,10 +963,14 @@ function populateSelects() {
 }
 
 function refreshStorageSelects() {
-  const locs = DB.storageLocations.map(l => l.name).concat(DEFAULT_STORAGE_LOCATIONS.filter(d => !DB.storageLocations.find(l => l.name === d)));
-  const unique = [...new Set(locs)];
-  const opts = '<option value="">Select location…</option>' + unique.map(l => `<option>${l}</option>`).join('');
-  qsa('#fStorageLocation, #biFStoreLoc, #relFToLoc').forEach(sel => { sel.innerHTML = opts; });
+  const locs = DB.storageLocations.length ? DB.storageLocations.map(l => l.name) : DEFAULT_STORAGE_LOCATIONS;
+  const unique = [...new Set(locs.filter(Boolean))];
+  const opts = '<option value="">Select location…</option>' + unique.map(l => `<option value="${UI.esc(l)}">${UI.esc(l)}</option>`).join('');
+  qsa('#fStorageLocation, #biFStoreLoc, #relFToLoc').forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML = opts;
+    if (cur) setSelectValueKeep(sel.id, cur);
+  });
 }
 
 // ============================================
@@ -959,8 +978,8 @@ function refreshStorageSelects() {
 // ============================================
 function renderLowStockAlerts() {
   const lowThreshold = DB.settings.lowStockThreshold || 5;
-  const lowItems = DB.stock.filter(s => s.quantity > 0 && s.quantity < lowThreshold);
-  const outItems = DB.stock.filter(s => s.quantity === 0);
+  const lowItems = DB.stock.filter(s => stockQty(s) > 0 && stockQty(s) < lowThreshold);
+  const outItems = DB.stock.filter(s => stockQty(s) <= 0);
   const count = lowItems.length + outItems.length;
   const desc = count
     ? `${lowItems.length} low inventory · ${outItems.length} out of inventory (threshold: ${lowThreshold})`
@@ -1019,7 +1038,7 @@ function renderInventoryList() {
   const body = document.getElementById('invListTableBody');
   if (!body) return;
   if (!items.length) {
-    body.innerHTML = '<tr class="table-empty"><td colspan="9">No inventory items found</td></tr>';
+    body.innerHTML = '<tr class="table-empty"><td colspan="10">No inventory items found</td></tr>';
     return;
   }
   body.innerHTML = items.map(s => `
@@ -1029,6 +1048,7 @@ function renderInventoryList() {
       <td>${UI.esc(s.partDescription)}</td>
       <td>${UI.esc(invLabel(s.stockCategory || '—'))}</td>
       <td class="${s.quantity < (DB.settings.lowStockThreshold||5) ? 'qty-low' : 'qty-ok'}">${s.quantity}</td>
+      <td>${s.jobNumber ? `<span class="list-item-badge badge-user">${UI.esc(s.jobNumber)}</span>` : '—'}</td>
       <td>${UI.esc(s.storageLocation || '—')}</td>
       <td>${UI.esc(s.trayBin || '—')}</td>
       <td>${UI.esc(s.serialNumber || '—')}</td>
@@ -1047,10 +1067,12 @@ function toggleActivityFeed() {
 function renderDashboard() {
   const lowThreshold = DB.settings.lowStockThreshold || 5;
   document.getElementById('statTotalStock').textContent = DB.stock.length;
-  document.getElementById('statLowStock').textContent = DB.stock.filter(s => s.quantity < lowThreshold).length;
+  document.getElementById('statLowStock').textContent = DB.stock.filter(s => stockQty(s) > 0 && stockQty(s) < lowThreshold).length;
+  const lowLabel = document.getElementById('statLowStockLabel');
+  if (lowLabel) lowLabel.textContent = `Low Inventory Alerts (<${lowThreshold})`;
   document.getElementById('statActiveJobs').textContent = DB.jobs.filter(j => j.status === 'Active').length;
   document.getElementById('statTotalUsers').textContent = DB.users.length;
-  document.getElementById('statOutOfStock').textContent = DB.stock.filter(s => s.quantity === 0).length;
+  document.getElementById('statOutOfStock').textContent = DB.stock.filter(s => stockQty(s) <= 0).length;
   document.getElementById('statStorageLocations').textContent = DB.storageLocations.length || DEFAULT_STORAGE_LOCATIONS.length;
   renderLowStockAlerts();
 
@@ -1294,14 +1316,14 @@ function renderStockList() {
   const catF = val('stockCategoryFilter');
   const total = DB.stock.length;
   let items = DB.stock.filter(s =>
-    (!q || s.stockNumber.toLowerCase().includes(q) || s.partDescription.toLowerCase().includes(q) || s.partNumber.toLowerCase().includes(q)) &&
+    (!q || s.stockNumber.toLowerCase().includes(q) || (s.partDescription || '').toLowerCase().includes(q) || (s.partNumber || '').toLowerCase().includes(q)) &&
     (!catF || s.stockCategory === catF)
   );
   document.getElementById('stockCount').textContent = items.length + ' records';
   const list = document.getElementById('stockList');
   const catClass = stockCategoryClass;
   if (!total) {
-    list.innerHTML = UI.emptyListState('package', 'stock items', 'stockForm', '+ Add Stock Item');
+    list.innerHTML = UI.emptyListState('package', 'inventory items', 'stockForm', '+ Add Inventory Item');
     return;
   }
   if (!items.length) {
@@ -1312,7 +1334,7 @@ function renderStockList() {
     <div class="list-item ${selectedStockId === s.id ? 'selected' : ''}" role="option" aria-selected="${selectedStockId === s.id}" tabindex="0" onclick="selectStock('${UI.esc(s.id)}')">
       <div class="list-item-avatar" style="font-size:11px">${UI.esc(s.stockNumber.slice(-4))}</div>
       <div class="list-item-info">
-        <div class="list-item-primary">${UI.esc(s.stockNumber)} — ${UI.esc(s.partDescription)}</div>
+        <div class="list-item-primary">${UI.esc(s.stockNumber)}${s.jobNumber ? ` <span style="color:var(--blue);font-size:11px">[${UI.esc(s.jobNumber)}]</span>` : ''} — ${UI.esc(s.partDescription)}</div>
         <div class="list-item-secondary">${UI.esc(s.partNumber || '—')} &nbsp;·&nbsp; Qty: <strong class="${s.quantity < (DB.settings.lowStockThreshold||5) ? 'qty-low' : 'qty-ok'}">${s.quantity}</strong></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
@@ -1335,21 +1357,21 @@ function applySelectStock(id) {
   FormDirty.clear('stockForm');
   show(document.getElementById('stockFormContent'));
   hide(document.getElementById('stockFormEmpty'));
-  document.getElementById('stockFormTitle').textContent = 'Edit Stock Item';
+  document.getElementById('stockFormTitle').textContent = 'Edit Inventory Item';
   document.getElementById('stockFormSub').textContent = s.stockNumber;
   document.getElementById('stockFormBadge').textContent = 'EDIT';
   document.getElementById('stockFormBadge').className = 'form-mode-badge edit';
-  setVal('fStockCategory', s.stockCategory);
+  setSelectValueKeep('fStockCategory', s.stockCategory);
   setVal('fStockNumber', s.stockNumber);
   setVal('fPartNumber', s.partNumber);
   setVal('fSerialNumber', s.serialNumber);
   setVal('fPartDesc', s.partDescription);
   setVal('fQty', s.quantity);
   setVal('fPoNumber', s.poNumber);
-  setVal('fStorageLocation', s.storageLocation);
+  setSelectValueKeep('fStorageLocation', s.storageLocation);
   setVal('fTrayBin', s.trayBin);
   setVal('fStockJobNum', s.jobNumber);
-  setVal('fJobCatStock', s.jobCategory);
+  setSelectValueKeep('fJobCatStock', s.jobCategory);
   show(document.getElementById('stockDeleteBtn'));
   renderStockList();
   UI.scrollToPanel('stockFormPanel');
@@ -1361,7 +1383,7 @@ function stockForm(mode) {
     FormDirty.clear('stockForm');
     show(document.getElementById('stockFormContent'));
     hide(document.getElementById('stockFormEmpty'));
-    document.getElementById('stockFormTitle').textContent = 'Add Stock Item';
+    document.getElementById('stockFormTitle').textContent = 'Add Inventory Item';
     document.getElementById('stockFormSub').textContent = 'Fill in the details below';
     document.getElementById('stockFormBadge').textContent = 'NEW';
     document.getElementById('stockFormBadge').className = 'form-mode-badge add';
@@ -1382,10 +1404,10 @@ function stockFormClear() {
 }
 
 async function saveStock() {
-  if (!ManageITPerms.canEdit('StockNumber')) return toast('You have view-only access to stock master data.', 'error');
+  if (!ManageITPerms.canEdit('StockNumber')) return toast('You have view-only access to inventory master data.', 'error');
   UI.clearFormErrors(['fStockNumber', 'fPartDesc', 'fStockCategory']);
   const valid = UI.validateRequired([
-    { id: 'fStockNumber', message: 'Enter a stock number' },
+    { id: 'fStockNumber', message: 'Enter an inventory number' },
     { id: 'fPartDesc', message: 'Enter a part description' },
     { id: 'fStockCategory', message: 'Select a category' }
   ]);
@@ -1410,12 +1432,12 @@ async function saveStock() {
         const idx = DB.stock.findIndex(s => s.id === selectedStockId);
         if (idx >= 0) DB.stock[idx] = updated;
         DB.logActivity(currentUser.firstName + ' ' + currentUser.lastName, 'Edit Stock', 'General Stock Management', `Updated stock ${stockNumber}`, stockNumber, qty);
-        toast('Stock item updated', 'success');
+        toast('Inventory item updated', 'success');
       } else {
         const created = await ManageITApi.createStock(stockPayload);
         DB.stock.push(created);
         DB.logActivity(currentUser.firstName + ' ' + currentUser.lastName, 'Add Stock', 'General Stock Management', `Added stock ${stockNumber}`, stockNumber, qty);
-        toast('Stock item added', 'success');
+        toast('Inventory item added', 'success');
       }
       DB.cacheLocal();
       FormDirty.clear('stockForm');
@@ -1427,12 +1449,12 @@ async function saveStock() {
       const idx = DB.stock.findIndex(s => s.id === selectedStockId);
       DB.stock[idx] = { ...DB.stock[idx], ...stockPayload };
       DB.logActivity(currentUser.firstName + ' ' + currentUser.lastName, 'Edit Stock', 'General Stock Management', `Updated stock ${stockNumber}`, stockNumber, qty);
-      toast('Stock item updated (saved locally)', 'success');
+      toast('Inventory item updated (saved locally)', 'success');
     } else {
-      if (DB.stock.find(s => s.stockNumber === stockNumber)) { toast('Stock number already exists', 'error'); throw new Error('duplicate'); }
+      if (DB.stock.find(s => s.stockNumber === stockNumber)) { toast('Inventory number already exists', 'error'); throw new Error('duplicate'); }
       DB.stock.push({ id: uid(), ...stockPayload, createdAt: new Date().toISOString() });
       DB.logActivity(currentUser.firstName + ' ' + currentUser.lastName, 'Add Stock', 'General Stock Management', `Added stock ${stockNumber}`, stockNumber, qty);
-      toast('Stock item added (saved locally)', 'success');
+      toast('Inventory item added (saved locally)', 'success');
     }
     FormDirty.clear('stockForm');
     DB.save();
@@ -1475,30 +1497,41 @@ function renderJobStockTable() {
   // Populate job filter
   const jf = document.getElementById('jobStockJobFilter');
   const curVal = jf.value;
-  jf.innerHTML = '<option value="">All Jobs</option>' + DB.jobs.map(j => `<option value="${j.jobNumber}">${j.jobNumber}</option>`).join('');
+  const jobsByNumber = new Map(DB.jobs.map(j => [j.jobNumber, j]));
+  const filterJobs = [...new Set(DB.jobs.map(j => j.jobNumber)
+    .concat(DB.stock.map(s => (s.jobNumber || '').trim()).filter(Boolean)))];
+  jf.innerHTML = '<option value="">All Jobs</option>' + filterJobs.map(n => `<option value="${UI.esc(n)}">${UI.esc(n)}${jobsByNumber.has(n) ? '' : ' (not in Job Management)'}</option>`).join('');
   jf.value = curVal;
 
   let items = DB.stock.filter(s => s.jobNumber && s.jobNumber.trim() &&
-    (!q || s.stockNumber.toLowerCase().includes(q) || s.partDescription.toLowerCase().includes(q) || s.jobNumber.toLowerCase().includes(q)) &&
+    (!q || s.stockNumber.toLowerCase().includes(q) || (s.partDescription || '').toLowerCase().includes(q) || s.jobNumber.toLowerCase().includes(q)) &&
     (!jobF || s.jobNumber === jobF)
   );
   const body = document.getElementById('jobStockTableBody');
   if (!items.length) {
-    body.innerHTML = '<tr class="table-empty"><td colspan="8">No allocated inventory found</td></tr>';
+    body.innerHTML = '<tr class="table-empty"><td colspan="9">No allocated inventory found</td></tr>';
     return;
   }
-  body.innerHTML = items.map(s => `
+  const statusBadge = job => {
+    if (!job) return '<span class="list-item-badge badge-inactive" title="This job number is not on Job Management (Master portal)">Not in Job Management</span>';
+    const cls = { Active: 'badge-active', 'On Hold': 'badge-user', Completed: 'badge-admin', Cancelled: 'badge-inactive' }[job.status] || 'badge-inactive';
+    return `<span class="list-item-badge ${cls}">${UI.esc(job.status || '—')}</span>`;
+  };
+  body.innerHTML = items.map(s => {
+    const job = jobsByNumber.get(s.jobNumber);
+    return `
     <tr>
-      <td><strong>${s.stockNumber}</strong></td>
-      <td>${s.partNumber || '—'}</td>
-      <td>${s.partDescription}</td>
-      <td><span class="list-item-badge badge-user">${s.jobNumber}</span></td>
-      <td>${s.jobCategory || '—'}</td>
+      <td><strong>${UI.esc(s.stockNumber)}</strong></td>
+      <td>${UI.esc(s.partNumber || '—')}</td>
+      <td>${UI.esc(s.partDescription || '—')}</td>
+      <td><span class="list-item-badge badge-user">${UI.esc(s.jobNumber)}</span></td>
+      <td>${statusBadge(job)}</td>
+      <td>${UI.esc((job && job.category) || s.jobCategory || '—')}</td>
       <td class="${s.quantity < (DB.settings.lowStockThreshold||5) ? 'qty-low' : 'qty-ok'}">${s.quantity}</td>
-      <td>${s.storageLocation || '—'}</td>
-      <td>${s.trayBin || '—'}</td>
-    </tr>
-  `).join('');
+      <td>${UI.esc(s.storageLocation || '—')}</td>
+      <td>${UI.esc(s.trayBin || '—')}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ============================================
@@ -1977,6 +2010,8 @@ async function submitRelocation() {
 
 // ---- TRANSFER ----
 function renderTransferList() {
+  const jobList = document.getElementById('trDestJobList');
+  if (jobList) jobList.innerHTML = DB.jobs.map(j => `<option value="${UI.esc(j.jobNumber)}">${UI.esc(j.jobDescription || '')} · ${UI.esc(j.status || '')}</option>`).join('');
   const q = val('trSearch').toLowerCase();
   const items = DB.stock.filter(s =>
     s.quantity > 0 &&
@@ -2168,14 +2203,14 @@ async function submitReverseTransfer() {
   if (!srcItem) return toast('Source inventory item not found', 'error');
   if (!srcItem.jobNumber && transferMode === 'general') return toast('Reverse transfer requires job-allocated source inventory', 'error');
   if (srcItem.quantity < qty) return toast(`Insufficient quantity — only ${srcItem.quantity} available`, 'error');
+  const destJob = val('trFDestJob').trim();
+  if (transferMode === 'jobtojob' && !destJob) return toast('Enter a destination job number', 'error');
 
   const srcQtyBefore = srcItem.quantity;
   srcItem.quantity -= qty;
 
   let destItem;
   if (transferMode === 'jobtojob') {
-    const destJob = val('trFDestJob').trim();
-    if (!destJob) return toast('Enter a destination job number', 'error');
     destItem = DB.stock.find(s => s.id !== srcItem.id && s.stockNumber === srcItem.stockNumber && s.jobNumber === destJob);
     if (destItem) destItem.quantity += qty;
     else {
@@ -3187,43 +3222,79 @@ function deleteUserConfirm() {
 // ============================================
 // KPI REPORTS
 // ============================================
+function stockQty(s) {
+  const n = Number(s?.quantity);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function stockOnHandItems() {
+  return DB.stock.filter(s => stockQty(s) > 0);
+}
+
+const KPI_TX_GROUPS = {
+  Receipt: t => t.type === 'Receipt' || t.type === 'Book In',
+  'Book Out': t => t.type === 'Book Out',
+  Transfer: t => t.type === 'Transfer' || t.type === 'Transfer OUT' || t.type === 'Transfer (Reverse)',
+  Relocation: t => t.type === 'Relocation',
+  Adjustment: t => t.type === 'Adjustment'
+};
+
 function refreshKPIs() {
   document.getElementById('kpiTotalItems').textContent = DB.stock.length;
-  document.getElementById('kpiBookIns').textContent = DB.transactions.filter(t => t.type === 'Book In').length;
-  document.getElementById('kpiBookOuts').textContent = DB.transactions.filter(t => t.type === 'Book Out').length;
-  document.getElementById('kpiTransfers').textContent = DB.transactions.filter(t => t.type === 'Transfer').length;
+  document.getElementById('kpiBookIns').textContent = DB.transactions.filter(KPI_TX_GROUPS.Receipt).length;
+  document.getElementById('kpiBookOuts').textContent = DB.transactions.filter(KPI_TX_GROUPS['Book Out']).length;
+  document.getElementById('kpiTransfers').textContent = DB.transactions.filter(KPI_TX_GROUPS.Transfer).length;
 
-  // Category donut
-  const catCounts = {};
-  STOCK_CATEGORIES.forEach(c => { catCounts[c] = DB.stock.filter(s => s.stockCategory === c).length; });
+  const onHand = stockOnHandItems();
+
+  // Category donut: items with qty > 0 only; slices sized by item count
+  const catItems = {};
+  const catUnits = {};
+  STOCK_CATEGORIES.forEach(c => { catItems[c] = 0; catUnits[c] = 0; });
+  onHand.forEach(s => {
+    const c = normaliseStockCategory(s.stockCategory);
+    if (!(c in catItems)) return;
+    catItems[c] += 1;
+    catUnits[c] += stockQty(s);
+  });
   const catColors = ['#3860b2','#27ae60','#e67e22'];
-  const total = Object.values(catCounts).reduce((a,b) => a+b, 0) || 1;
-  document.getElementById('kpiCategoryChart').innerHTML = `
+  const fmtN = n => Number(n).toLocaleString('en-ZA');
+  const plural = (n, word) => `${fmtN(n)} ${word}${n === 1 ? '' : 's'}`;
+  const totalItems = Object.values(catItems).reduce((a,b) => a+b, 0);
+  const totalUnits = Object.values(catUnits).reduce((a,b) => a+b, 0);
+  const excluded = DB.stock.length - onHand.length;
+  document.getElementById('kpiCategoryChart').innerHTML = totalItems ? `
     <div style="position:relative;width:120px;height:120px;flex-shrink:0">
-      ${renderDonutSVG(Object.values(catCounts), catColors)}
+      ${renderDonutSVG(Object.values(catItems), catColors)}
     </div>
     <div class="donut-legend">
       ${STOCK_CATEGORIES.map((c,i) => `
         <div class="donut-legend-item">
           <div class="donut-dot" style="background:${catColors[i]}"></div>
-          <span>${c}: <strong>${catCounts[c]}</strong></span>
+          <span>${UI.esc(c)}: <strong>${plural(catItems[c], 'item')}</strong> · ${plural(catUnits[c], 'unit')}</span>
         </div>
       `).join('')}
+      <div class="kpi-chart-caption">Items with stock (qty &gt; 0) · slices by item count · total ${plural(totalUnits, 'unit')} on hand${excluded ? ` · ${plural(excluded, 'item')} with 0 qty excluded` : ''}</div>
     </div>
-  `;
+  ` : '<div class="list-empty">No inventory with quantity on hand</div>';
 
-  // Location bar chart
+  // Location bar chart: same rule (items with qty > 0)
   const locCounts = {};
-  DB.stock.forEach(s => { if (s.storageLocation) locCounts[s.storageLocation] = (locCounts[s.storageLocation] || 0) + 1; });
+  const locUnits = {};
+  onHand.forEach(s => {
+    if (!s.storageLocation) return;
+    locCounts[s.storageLocation] = (locCounts[s.storageLocation] || 0) + 1;
+    locUnits[s.storageLocation] = (locUnits[s.storageLocation] || 0) + stockQty(s);
+  });
   const topLocs = Object.entries(locCounts).sort((a,b) => b[1]-a[1]).slice(0,7);
   const maxLoc = topLocs[0]?.[1] || 1;
   document.getElementById('kpiLocationChart').innerHTML = topLocs.length ? topLocs.map(([name,cnt]) => `
-    <div class="bar-row">
-      <div class="bar-label" title="${name}">${name.split('(')[0].trim()}</div>
+    <div class="bar-row" title="${UI.esc(name)}: ${plural(cnt, 'item')} · ${plural(locUnits[name], 'unit')}">
+      <div class="bar-label">${UI.esc(name.split('(')[0].trim())}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round(cnt/maxLoc*100)}%"></div></div>
       <div class="bar-val">${cnt}</div>
     </div>
-  `).join('') : '<div class="list-empty">No data</div>';
+  `).join('') + '<div class="kpi-chart-caption">Items with stock (qty &gt; 0)</div>' : '<div class="list-empty">No inventory with quantity on hand</div>';
 
   // Job type bar chart
   const jtCounts = {};
@@ -3241,9 +3312,9 @@ function refreshKPIs() {
   // Transaction activity last 30 days
   const now = Date.now();
   const days30 = 30 * 24 * 60 * 60 * 1000;
-  const txTypes = ['Book In','Book Out','Transfer'];
-  const txColors = ['#27ae60','#e74c3c','#e67e22'];
-  const txCounts = txTypes.map(t => DB.transactions.filter(x => x.type === t && (now - new Date(x.timestamp).getTime()) < days30).length);
+  const txTypes = ['Receipt','Transfer','Relocation','Adjustment'];
+  const txColors = ['#27ae60','#e67e22','#3860b2','#8e44ad'];
+  const txCounts = txTypes.map(t => DB.transactions.filter(x => KPI_TX_GROUPS[t](x) && (now - new Date(x.timestamp).getTime()) < days30).length);
   const maxTx = Math.max(...txCounts, 1);
   document.getElementById('kpiTxChart').innerHTML = txTypes.map((t,i) => `
     <div class="bar-row">
@@ -3260,6 +3331,7 @@ function renderDonutSVG(values, colors) {
   let cumulative = 0;
   const segments = values.map((v, i) => {
     const pct = v / total;
+    if (pct >= 0.9999) return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${colors[i]}" opacity="0.85"/>`;
     const start = cumulative;
     cumulative += pct;
     const startAngle = start * 2 * Math.PI - Math.PI/2;

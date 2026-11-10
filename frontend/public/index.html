@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20261103master" />
+  <link rel="stylesheet" href="styles.css?v=20261110kpi" />
   <script src="config.js"></script>
   <!-- SheetJS for Excel import (.xlsx, .xls, .csv, .ods, etc.) -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -423,7 +423,7 @@
               </select>
             </div>
             <div style="overflow-x:auto"><table>
-              <thead><tr><th>Inventory #</th><th>Part Number</th><th>Description</th><th>Category</th><th>Qty</th><th>Location</th><th>Tray/Bin</th><th>Serial</th><th></th></tr></thead>
+              <thead><tr><th>Inventory #</th><th>Part Number</th><th>Description</th><th>Category</th><th>Qty</th><th>Job</th><th>Location</th><th>Tray/Bin</th><th>Serial</th><th></th></tr></thead>
               <tbody id="invListTableBody"></tbody>
             </table></div>
           </div>
@@ -441,7 +441,7 @@
             </div>
             <div class="stat-card">
               <div class="stat-icon orange" data-icon="warning" data-icon-size="22"></div>
-              <div><div class="stat-value" id="statLowStock">0</div><div class="stat-label">Low Inventory Alerts (&lt;5)</div></div>
+              <div><div class="stat-value" id="statLowStock">0</div><div class="stat-label" id="statLowStockLabel">Low Inventory Alerts (&lt;5)</div></div>
             </div>
             <div class="stat-card">
               <div class="stat-icon green" data-icon="clipboard" data-icon-size="22"></div>
@@ -637,7 +637,7 @@
         <!-- ===== GENERAL STOCK MANAGEMENT ===== -->
         <div id="page-generalstock" class="page">
           <div class="page-header">
-            <div><div class="page-title">Inventory Management</div><div class="page-subtitle">Add, edit and manage inventory items (Admin)</div></div>
+            <div><div class="page-title">Inventory Management</div><div class="page-subtitle">Add, edit and manage inventory items (Master register)</div></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-outline" onclick="openImportModal('stock')"><span class="icon-inline"><span data-icon="upload" data-icon-size="15"></span><span>Import</span></span></button>
               <button class="btn btn-outline" onclick="exportExcel('stock')"><span class="icon-inline"><span data-icon="download" data-icon-size="15"></span><span>Export Excel</span></span></button>
@@ -653,7 +653,7 @@
                 </div>
                 <div class="search-box">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input type="text" id="stockSearch" placeholder="Search by stock number or description…" oninput="renderStockList()" />
+                  <input type="text" id="stockSearch" placeholder="Search by inventory number, part number or description…" oninput="renderStockList()" />
                 </div>
                 <div class="filter-row">
                   <select class="filter-select" id="stockCategoryFilter" onchange="renderStockList()">
@@ -667,27 +667,27 @@
               <div class="form-panel">
                 <div class="form-empty" id="stockFormEmpty">
                   <div class="form-empty-icon" data-icon="package" data-icon-size="40"></div>
-                  <div class="form-empty-text">Select a stock item from the list, or add a new one.</div>
-                  <div class="form-empty-cta-wrap"><button type="button" class="btn btn-primary" onclick="stockForm('new')">+ Add Stock Item</button></div>
+                  <div class="form-empty-text">Select an inventory item from the list, or add a new one.</div>
+                  <div class="form-empty-cta-wrap"><button type="button" class="btn btn-primary" onclick="stockForm('new')">+ Add Inventory Item</button></div>
                 </div>
                 <div id="stockFormContent" class="hidden">
                   <div class="form-panel-header">
                     <div>
-                      <div class="form-panel-title" id="stockFormTitle">Add Stock Item</div>
+                      <div class="form-panel-title" id="stockFormTitle">Add Inventory Item</div>
                       <div class="form-panel-subtitle" id="stockFormSub">Fill in the details below</div>
                     </div>
                     <span class="form-mode-badge add" id="stockFormBadge">NEW</span>
                   </div>
                   <div class="form-grid">
                     <div class="form-group">
-                      <label class="form-label">Stock Category <span class="required">*</span></label>
+                      <label class="form-label">Inventory Category <span class="required">*</span></label>
                       <select class="form-select" id="fStockCategory">
                         <option value="">Select category…</option>
                       </select>
                     </div>
                     <div class="form-group">
-                      <label class="form-label">Stock Number <span class="required">*</span></label>
-                      <input type="text" class="form-input" id="fStockNumber" placeholder="Enter stock number" />
+                      <label class="form-label">Inventory Number <span class="required">*</span></label>
+                      <input type="text" class="form-input" id="fStockNumber" placeholder="Enter inventory number" />
                     </div>
                     <div class="form-group">
                       <label class="form-label">Part Number</label>
@@ -760,7 +760,7 @@
             <div style="overflow-x:auto">
               <table>
                 <thead><tr>
-                  <th>Inventory #</th><th>Part Number</th><th>Description</th><th>Job</th><th>Category</th><th>Qty</th><th>Location</th><th>Tray/Bin</th>
+                  <th>Inventory #</th><th>Part Number</th><th>Description</th><th>Job</th><th>Job Status</th><th>Job Category</th><th>Qty</th><th>Location</th><th>Tray/Bin</th>
                 </tr></thead>
                 <tbody id="jobStockTableBody"></tbody>
               </table>
@@ -918,7 +918,7 @@
                     <div class="form-group span-2" style="border-top:2px dashed var(--border);padding-top:16px;margin-top:4px">
                       <label class="form-label" style="color:var(--navy)">TO — Destination</label>
                     </div>
-                    <div class="form-group" id="trDestJobGroup"><label class="form-label">Destination Job Number</label><input type="text" class="form-input" id="trFDestJob" placeholder="Enter destination job number" /></div>
+                    <div class="form-group" id="trDestJobGroup"><label class="form-label">Destination Job Number</label><input type="text" class="form-input" id="trFDestJob" list="trDestJobList" placeholder="Enter destination job number" /><datalist id="trDestJobList"></datalist></div>
                     <div class="form-group" id="trDestTypeGroup"><label class="form-label">Job Type</label><select class="form-select" id="trFJobType"><option value="">Select type…</option></select></div>
                     <div class="form-group span-2"><label class="form-label">Comment / Reason <span class="required">*</span></label><textarea class="form-input" id="trFComment" rows="2" placeholder="Required for inventory ↔ job and job ↔ job transfers"></textarea></div>
                   </div>
@@ -1208,8 +1208,8 @@
             <button class="btn btn-outline" onclick="refreshKPIs()"><span class="icon-inline"><span data-icon="refresh" data-icon-size="15"></span><span>Refresh</span></span></button>
           </div>
           <div class="stats-grid">
-            <div class="stat-card"><div class="stat-icon blue" data-icon="package" data-icon-size="24"></div><div><div class="stat-value" id="kpiTotalItems">0</div><div class="stat-label">Total Stock Items</div></div></div>
-            <div class="stat-card"><div class="stat-icon green" data-icon="download" data-icon-size="24"></div><div><div class="stat-value" id="kpiBookIns">0</div><div class="stat-label">Total Book-Ins</div></div></div>
+            <div class="stat-card"><div class="stat-icon blue" data-icon="package" data-icon-size="24"></div><div><div class="stat-value" id="kpiTotalItems">0</div><div class="stat-label" title="All inventory register records, including items with 0 quantity">Total Inventory Items</div></div></div>
+            <div class="stat-card"><div class="stat-icon green" data-icon="download" data-icon-size="24"></div><div><div class="stat-value" id="kpiBookIns">0</div><div class="stat-label">Total Receipts</div></div></div>
             <div class="stat-card"><div class="stat-icon red" data-icon="upload" data-icon-size="24"></div><div><div class="stat-value" id="kpiBookOuts">0</div><div class="stat-label">Total Book-Outs</div></div></div>
             <div class="stat-card"><div class="stat-icon orange" data-icon="refresh" data-icon-size="24"></div><div><div class="stat-value" id="kpiTransfers">0</div><div class="stat-label">Transfers</div></div></div>
           </div>
@@ -1991,13 +1991,13 @@
 </div>
 
 <script src="icons.js?v=20261103master"></script>
-<script src="permissions.js?v=20260728perm"></script>
+<script src="permissions.js?v=20261110kpi"></script>
 <script src="audit-workflow.js?v=20261103master"></script>
 <script src="api.js?v=20261016lmsaccess"></script>
 <script src="ui.js?v=20260729jobtype"></script>
 <script src="excel-export.js?v=20260922count"></script>
-<script src="asset-management.js?v=20260729"></script>
+<script src="asset-management.js?v=20261110kpi"></script>
 <script src="engineering.js?v=20261029fix"></script>
-<script src="app.js?v=20261105transfer"></script>
+<script src="app.js?v=20261110kpi"></script>
 </body>
 </html>

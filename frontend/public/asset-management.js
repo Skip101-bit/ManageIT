@@ -122,7 +122,7 @@ function renderAssetList() {
       <div class="list-item-avatar icon-only" data-icon="layers" data-icon-size="16"></div>
       <div class="list-item-info">
         <div class="list-item-primary">${UI.esc(a.assetNumber)} · ${UI.esc(a.assetName)}</div>
-        <div class="list-item-secondary">${UI.esc(a.category || '—')} · ${UI.esc(a.storageLocation || 'No location')}</div>
+        <div class="list-item-secondary">${UI.esc(a.category || '—')} · ${UI.esc(a.storageLocation || 'No location')}${a.jobNumber ? ' · Job ' + UI.esc(a.jobNumber) : ''}</div>
       </div>
       <span class="list-item-badge ${assetStatusBadge(a.status)}">${UI.esc(a.status)}</span>
     </div>
@@ -196,8 +196,10 @@ function applySelectAsset(id) {
   setVal('fAssetTag', a.assetTag);
   setVal('fAssetStatus', a.status);
   setVal('fAssetCondition', a.condition);
-  setVal('fAssetLocation', a.storageLocation);
-  setVal('fAssetJob', a.jobNumber);
+  setSelectValueKeep('fAssetLocation', a.storageLocation);
+  const allocatedJob = DB.jobs.find(j => j.jobNumber === a.jobNumber);
+  setSelectValueKeep('fAssetJob', a.jobNumber,
+    a.jobNumber && `${a.jobNumber} (${allocatedJob ? allocatedJob.status : 'not in Job Management'})`);
   setVal('fAssetAssigned', a.assignedTo);
   setVal('fAssetDept', a.department);
   setVal('fAssetPurchaseDate', a.purchaseDate || '');
