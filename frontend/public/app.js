@@ -3263,14 +3263,15 @@ function refreshKPIs() {
   const totalItems = Object.values(catItems).reduce((a,b) => a+b, 0);
   const totalUnits = Object.values(catUnits).reduce((a,b) => a+b, 0);
   const excluded = DB.stock.length - onHand.length;
+  const catShown = STOCK_CATEGORIES.map((c,i) => ({ c, color: catColors[i] })).filter(x => catItems[x.c] > 0);
   document.getElementById('kpiCategoryChart').innerHTML = totalItems ? `
     <div style="position:relative;width:120px;height:120px;flex-shrink:0">
-      ${renderDonutSVG(Object.values(catItems), catColors)}
+      ${renderDonutSVG(catShown.map(x => catItems[x.c]), catShown.map(x => x.color))}
     </div>
     <div class="donut-legend">
-      ${STOCK_CATEGORIES.map((c,i) => `
+      ${catShown.map(({ c, color }) => `
         <div class="donut-legend-item">
-          <div class="donut-dot" style="background:${catColors[i]}"></div>
+          <div class="donut-dot" style="background:${color}"></div>
           <span>${UI.esc(c)}: <strong>${plural(catItems[c], 'item')}</strong> · ${plural(catUnits[c], 'unit')}</span>
         </div>
       `).join('')}
