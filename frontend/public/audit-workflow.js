@@ -52,7 +52,7 @@ const AuditWF = (() => {
       },
       reconReports: {}
     };
-    session.counts[1].lines = DB.stock.filter(s => (s.quantity || 0) > 0).map(s => ({
+    session.counts[1].lines = DB.stock.filter(s => stockQty(s) > 0).map(s => ({
       stockId: s.id,
       stockNumber: s.stockNumber,
       partNumber: s.partNumber || '',
@@ -669,21 +669,21 @@ const AuditWF = (() => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          let rows = [];
+          let parsed = { rows: [] };
           if (ext === 'csv' || ext === 'txt' || ext === 'tsv') {
             const workbook = XLSX.read(e.target.result, { type: 'string', FS: ext === 'tsv' ? '\t' : undefined });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            rows = (typeof parseSpreadsheetSheet === 'function'
+            parsed = typeof parseSpreadsheetSheet === 'function'
               ? parseSpreadsheetSheet(sheet)
-              : { rows: XLSX.utils.sheet_to_json(sheet) }).rows;
+              : { rows: XLSX.utils.sheet_to_json(sheet) };
           } else {
             const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            rows = (typeof parseSpreadsheetSheet === 'function'
+            parsed = typeof parseSpreadsheetSheet === 'function'
               ? parseSpreadsheetSheet(sheet)
-              : { rows: XLSX.utils.sheet_to_json(sheet) }).rows;
+              : { rows: XLSX.utils.sheet_to_json(sheet) };
           }
-          this.applyCountSheetImport(rows, file.name);
+          this.applyCountSheetImport(parsed.rows, file.name, parsed.headerRowIndex || 0);
         } catch (err) {
           toast('Failed to read count sheet: ' + err.message, 'error');
         }
@@ -692,7 +692,7 @@ const AuditWF = (() => {
       else reader.readAsArrayBuffer(file);
     },
 
-    applyCountSheetImport(rows, fileName) {
+    applyCountSheetImport(rows, fileName, headerRowIndex = 0) {
       const session = activeSession();
       if (!session) return toast('Select an audit session first', 'error');
       const countNum = parseInt(document.getElementById('auditCountSelect')?.value || '1', 10);
@@ -735,7 +735,7 @@ const AuditWF = (() => {
             ? importNormalizeNumber(rawQty)
             : { ok: !isNaN(parseFloat(rawQty)), value: parseFloat(rawQty) });
         sheetByStock.set(key.toLowerCase(), {
-          rowNum: i + 2,
+          rowNum: headerRowIndex + i + 2,
           stockNumber: key,
           qty: parsed.ok && parsed.value != null ? Math.round(parsed.value) : null,
           qtyRaw: blank ? '—' : rawQty,
@@ -764,7 +764,7 @@ const AuditWF = (() => {
             partDescription: line.partDescription || '',
             sheetQty: match.qtyRaw,
             status: 'invalid',
-            detail: match.blank ? 'Blank / dash — enter a number' : 'Invalid quantity'
+            detail: `${match.blank ? 'Blank / dash — enter a number' : 'Invalid quantity'} (row ${match.rowNum})`
           };
         }
         line.countedQty = match.qty;
@@ -785,7 +785,7 @@ const AuditWF = (() => {
         partDescription: '',
         sheetQty: m.qtyOk ? m.qty : m.qtyRaw,
         status: 'extra',
-        detail: 'On sheet but not in this count'
+        detail: `On sheet but not in this count (row ${m.rowNum})`
       }));
 
       persist();

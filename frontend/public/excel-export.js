@@ -66,7 +66,7 @@ const ManageITExcel = (() => {
           if (sessionRows && sessionRows.length) return sessionRows;
         }
         return DB.stock
-          .filter(s => (s.quantity || 0) > 0)
+          .filter(s => stockQty(s) > 0)
           .map(s => ({
             stockNumber: s.stockNumber,
             partNumber: s.partNumber || '',
