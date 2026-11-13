@@ -77,6 +77,8 @@ public sealed partial class ManageItDataService
             JobCardLines = engineering?.JobCardLines,
             StockChecks = engineering?.StockChecks,
             BomHistory = engineering?.BomHistory,
+            Products = engineering?.Products,
+            ProductBomLines = engineering?.ProductBomLines,
             Settings = settings
         };
     }

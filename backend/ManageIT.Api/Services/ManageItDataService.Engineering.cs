@@ -17,6 +17,8 @@ public sealed partial class ManageItDataService
         public List<JobCardLineDto> JobCardLines { get; set; } = [];
         public List<StockCheckDto> StockChecks { get; set; } = [];
         public List<BomHistoryDto> BomHistory { get; set; } = [];
+        public List<ProductDto> Products { get; set; } = [];
+        public List<ProductBomLineDto> ProductBomLines { get; set; } = [];
     }
 
     private async Task TryEnsureEngineeringTableAsync(CancellationToken ct)
@@ -61,7 +63,7 @@ public sealed partial class ManageItDataService
     {
         if (state.BomLines == null && state.PastelTimeline == null && state.PastelChecks == null
             && state.PastelUpdates == null && state.JobCardLines == null && state.StockChecks == null
-            && state.BomHistory == null)
+            && state.BomHistory == null && state.Products == null && state.ProductBomLines == null)
             return;
 
         if (!await TableExistsAsync(conn, "EngineeringDocs", ct, tx))
@@ -85,7 +87,9 @@ public sealed partial class ManageItDataService
             PastelUpdates = state.PastelUpdates ?? existing.PastelUpdates,
             JobCardLines = state.JobCardLines ?? existing.JobCardLines,
             StockChecks = state.StockChecks ?? existing.StockChecks,
-            BomHistory = state.BomHistory ?? existing.BomHistory
+            BomHistory = state.BomHistory ?? existing.BomHistory,
+            Products = state.Products ?? existing.Products,
+            ProductBomLines = state.ProductBomLines ?? existing.ProductBomLines
         };
 
         var payload = JsonSerializer.Serialize(doc, JsonOpts);

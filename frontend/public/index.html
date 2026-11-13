@@ -159,6 +159,10 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             Inventory Management
           </div>
+          <div class="nav-item" data-perm="StockNumber" data-page="productmanagement" onclick="navTo('productmanagement',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+            Product Management
+          </div>
           <div class="nav-item" data-perm="StockLocation" data-page="addstorage" onclick="navTo('addstorage',this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
             Storage Locations
@@ -1123,6 +1127,90 @@
           </div>
         </div>
 
+        <!-- ===== PRODUCT MANAGEMENT ===== -->
+        <div id="page-productmanagement" class="page">
+          <div class="page-header">
+            <div><div class="page-title">Product Management</div><div class="page-subtitle">Product models and their initial BOMs from Inventor, AutoCAD or the Parts Library</div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary" id="productAddBtn" onclick="Engineering.productForm()">+ Add Product</button>
+            </div>
+          </div>
+          <div class="split-layout">
+            <div class="split-left">
+              <div class="list-header">
+                <div class="list-header-top"><span class="list-title">Products</span><span class="record-count" id="productCount">0 records</span></div>
+                <div class="search-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="productSearch" placeholder="Search model number or name…" oninput="Engineering.renderProducts()" /></div>
+              </div>
+              <div class="list-body" id="productList"></div>
+            </div>
+            <div class="split-right" style="min-width:0">
+              <div class="form-panel">
+                <div class="form-empty" id="productFormEmpty"><div class="form-empty-icon" data-icon="file" data-icon-size="40"></div><div class="form-empty-text">Select a product or add new</div></div>
+                <div id="productFormContent" class="hidden">
+                  <div class="form-panel-header">
+                    <div class="form-panel-title" id="productFormTitle">Add Product</div>
+                    <span class="form-mode-badge add" id="productFormBadge">NEW</span>
+                  </div>
+                  <div class="form-grid">
+                    <div class="form-group"><label class="form-label" for="fProductModel">Model Number <span class="required">*</span></label><input type="text" class="form-input" id="fProductModel" placeholder="e.g. HNL-1000" /></div>
+                    <div class="form-group"><label class="form-label" for="fProductName">Product Name <span class="required">*</span></label><input type="text" class="form-input" id="fProductName" placeholder="Enter product name" /></div>
+                    <div class="form-group"><label class="form-label" for="fProductCategory">Product Category</label><input type="text" class="form-input" id="fProductCategory" list="productCategoryList" placeholder="e.g. Vertical storage" /><datalist id="productCategoryList"></datalist></div>
+                    <div class="form-group"><label class="form-label" for="fProductStatus">Status</label><select class="form-select" id="fProductStatus"><option value="Active">Active</option><option value="Discontinued">Discontinued</option></select></div>
+                    <div class="form-group" style="grid-column:1/-1"><label class="form-label" for="fProductDesc">Description</label><textarea class="form-textarea" id="fProductDesc" placeholder="Enter description"></textarea></div>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn btn-primary" id="productSaveBtn" onclick="Engineering.saveProduct()"><span class="icon-inline"><span data-icon="save" data-icon-size="15"></span><span>Save</span></span></button>
+                    <button class="btn btn-danger" id="productDeleteBtn" onclick="Engineering.deleteProductConfirm()"><span class="icon-inline"><span data-icon="trash" data-icon-size="15"></span><span>Delete</span></span></button>
+                    <button class="btn btn-outline" onclick="Engineering.productFormClear()"><span class="icon-inline"><span data-icon="x" data-icon-size="15"></span><span>Cancel</span></span></button>
+                  </div>
+                  <p class="eng-reason hidden" id="productBomHint" style="margin-top:16px">Save the product first, then upload its initial BOM.</p>
+                  <div id="productBomSection" class="hidden" style="margin-top:24px;border-top:1px solid var(--border);padding-top:18px">
+                    <div class="form-panel-title" style="font-size:16px">Initial BOM</div>
+                    <p class="eng-reason" id="productBomMeta" style="margin:4px 0 12px"></p>
+                    <div class="eng-form">
+                      <div class="form-group">
+                        <label class="form-label" for="productBomSource">Exported from</label>
+                        <select class="form-select" id="productBomSource">
+                          <option value="Inventor">Inventor</option>
+                          <option value="AutoCAD">AutoCAD</option>
+                          <option value="Parts Library">Parts Library</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="productBomDiscipline">Discipline</label>
+                        <select class="form-select" id="productBomDiscipline">
+                          <option value="Other">Other</option>
+                          <option value="C&amp;I">C&amp;I</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="button" class="btn btn-primary" id="productBomUploadBtn" onclick="document.getElementById('productBomFile').click()">Upload initial BOM</button>
+                        <input type="file" id="productBomFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="Engineering.uploadProductBom(this.files[0])" />
+                      </div>
+                    </div>
+                    <p class="eng-reason">Quantities are per one unit of the product. C&amp;I part numbers are updated in the Parts Library. Other Inventor parts are updated in Inventor, other AutoCAD parts in AutoCAD, and other Parts Library parts in the Parts Library. The master inventory is not changed by an upload.</p>
+                    <div class="eng-kpis" id="productBomKpis" style="margin-top:12px"></div>
+                    <div class="page-header-actions" style="margin-bottom:12px">
+                      <button type="button" class="btn btn-outline" id="productAddAllBtn" onclick="Engineering.addAllProductUnidentified()">Add unidentified to master</button>
+                    </div>
+                    <div class="table-card"><div class="table-wrap" style="overflow-x:auto"><table>
+                      <thead><tr><th>Part #</th><th>Description</th><th>Qty per unit</th><th>Discipline</th><th>Exported from</th><th>Part number updated in</th><th>Status</th><th></th></tr></thead>
+                      <tbody id="productBomBody"></tbody>
+                    </table></div></div>
+                    <div class="form-panel-title" style="font-size:14px;margin-top:16px">Previous uploads</div>
+                    <div class="table-card" style="margin-top:8px"><div class="table-wrap"><table>
+                      <thead><tr><th>Uploaded</th><th>File</th><th>Lines</th><th>Exported from</th><th>By</th></tr></thead>
+                      <tbody id="productBomHistoryBody"></tbody>
+                    </table></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- ===== USER MANAGEMENT ===== -->
         <div id="page-usermanagement" class="page">
           <div class="page-header">
@@ -1464,7 +1552,7 @@
             <div class="home-hero-main">
               <p class="home-hero-eyebrow">Master Portal</p>
               <h1 class="home-hero-title">Master Registers</h1>
-              <p class="home-hero-subtitle">Jobs, inventory, storage locations &amp; fixed assets</p>
+              <p class="home-hero-subtitle">Jobs, inventory, products, storage locations &amp; fixed assets</p>
             </div>
             <div class="home-hero-aside">
               <div class="home-hero-date" id="masterHomeDate">—</div>
@@ -1473,12 +1561,13 @@
           <div class="stats-grid">
             <div class="stat-card" onclick="navTo('jobmanagement')" style="cursor:pointer" title="Open Job Management"><div class="stat-icon green" data-icon="clipboard" data-icon-size="24"></div><div><div class="stat-value" id="masterStatJobs">0</div><div class="stat-label">Jobs</div></div></div>
             <div class="stat-card" data-perm="StockNumber" onclick="navTo('generalstock')" style="cursor:pointer" title="Open Inventory Management"><div class="stat-icon blue" data-icon="package" data-icon-size="24"></div><div><div class="stat-value" id="masterStatStock">0</div><div class="stat-label">Inventory Items</div></div></div>
+            <div class="stat-card" data-perm="StockNumber" onclick="navTo('productmanagement')" style="cursor:pointer" title="Open Product Management"><div class="stat-icon navy" data-icon="file" data-icon-size="24"></div><div><div class="stat-value" id="masterStatProducts">0</div><div class="stat-label">Products</div></div></div>
             <div class="stat-card" data-perm="StockLocation" onclick="navTo('addstorage')" style="cursor:pointer" title="Open Storage Locations"><div class="stat-icon purple" data-icon="store" data-icon-size="24"></div><div><div class="stat-value" id="masterStatStorage">0</div><div class="stat-label">Storage Locations</div></div></div>
             <div class="stat-card" data-perm="AssetManagement" onclick="navTo('assetmanagement')" style="cursor:pointer" title="Open Asset Management"><div class="stat-icon orange" data-icon="layers" data-icon-size="24"></div><div><div class="stat-value" id="masterStatAssets">0</div><div class="stat-label">Fixed Assets</div></div></div>
           </div>
           <div class="portal-section-head">
             <h2 class="portal-section-title">Master registers</h2>
-            <p class="portal-section-desc">Jobs, master inventory register, storage locations &amp; fixed assets</p>
+            <p class="portal-section-desc">Jobs, master inventory register, products, storage locations &amp; fixed assets</p>
           </div>
           <div class="home-grid master-modules-grid">
             <div class="home-card" onclick="navTo('jobmanagement')">
@@ -1494,6 +1583,14 @@
               <div class="home-card-body">
                 <div class="home-card-title">Inventory Management</div>
                 <div class="home-card-desc">Master stock register &amp; item details</div>
+              </div>
+              <span class="home-card-arrow" aria-hidden="true">›</span>
+            </div>
+            <div class="home-card" data-perm="StockNumber" onclick="navTo('productmanagement')">
+              <div class="home-card-icon tone-indigo" data-icon="file" data-icon-size="22"></div>
+              <div class="home-card-body">
+                <div class="home-card-title">Product Management</div>
+                <div class="home-card-desc">Product models &amp; their initial BOMs</div>
               </div>
               <span class="home-card-arrow" aria-hidden="true">›</span>
             </div>
@@ -1637,18 +1734,26 @@
           <div class="page-header">
             <div>
               <div class="page-title">BOM</div>
-              <div class="page-subtitle">Upload a BOM for one job, check it against the master inventory, then run the stock check.</div>
+              <div class="page-subtitle">Choose a job, select its BOM (a product BOM, the job's saved BOM or a file), check it against the master inventory, then run the stock check.</div>
             </div>
           </div>
           <div class="eng-rule">
-            <strong>The master inventory is not changed by a BOM upload.</strong>
-            The job number below is applied to every part and quantity in the file. Parts that are not on the master are flagged and are not allocated until you add them to the master. Adding them creates the part at quantity 0.
+            <strong>The master inventory is not changed by loading or uploading a BOM.</strong>
+            The job number below is applied to every part and quantity in the BOM. Parts that are not on the master are flagged and are not allocated until you add them to the master. Adding them creates the part at quantity 0.
           </div>
           <div class="eng-form">
             <div class="form-group">
               <label class="form-label" for="bomAssignJob">Job number</label>
-              <input type="text" class="form-input" id="bomAssignJob" list="bomJobList" placeholder="Job number" oninput="Engineering.renderBom()" />
+              <input type="text" class="form-input" id="bomAssignJob" list="bomJobList" placeholder="Job number" oninput="Engineering.onJobChange()" />
               <datalist id="bomJobList"></datalist>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bomMode">BOM source</label>
+              <select class="form-select" id="bomMode" onchange="Engineering.setBomMode()">
+                <option value="product">Product BOM</option>
+                <option value="saved">Saved job BOM</option>
+                <option value="upload">Upload file</option>
+              </select>
             </div>
             <div class="form-group">
               <label class="form-label" for="bomCatFilter">Master category</label>
@@ -1659,12 +1764,34 @@
                 <option>Legacy Inventory</option>
               </select>
             </div>
+          </div>
+          <div class="eng-form" id="bomMode-product">
+            <div class="form-group">
+              <label class="form-label" for="bomProduct">Product (model number)</label>
+              <select class="form-select" id="bomProduct"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bomUnits">Quantity of units</label>
+              <input type="number" class="form-input" id="bomUnits" min="1" step="1" value="1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">&nbsp;</label>
+              <button type="button" class="btn btn-primary" onclick="Engineering.loadProductBom()">Load product BOM</button>
+            </div>
+          </div>
+          <div class="eng-form hidden" id="bomMode-saved">
+            <div class="form-group" style="grid-column:1/-1">
+              <p class="eng-reason" id="bomSavedText">Choose a job number to see its saved BOM.</p>
+            </div>
+          </div>
+          <div class="eng-form hidden" id="bomMode-upload">
             <div class="form-group">
               <label class="form-label" for="bomSource">Exported from</label>
               <select class="form-select" id="bomSource">
                 <option value="">Not set</option>
-                <option value="Parts Library">Parts Library</option>
+                <option value="Inventor">Inventor</option>
                 <option value="AutoCAD">AutoCAD</option>
+                <option value="Parts Library">Parts Library</option>
               </select>
             </div>
             <div class="form-group">
@@ -1680,7 +1807,8 @@
               <input type="file" id="bomImportFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="Engineering.importBom(this.files[0])" />
             </div>
           </div>
-          <p class="eng-reason">C&amp;I part numbers are updated in the Parts Library. Other AutoCAD parts are updated in AutoCAD. Other Parts Library parts are updated in the Parts Library. Import columns: part number, description, qty.</p>
+          <div class="eng-rule hidden" id="bomSavedInfo"></div>
+          <p class="eng-reason">C&amp;I part numbers are updated in the Parts Library. Other Inventor parts are updated in Inventor, other AutoCAD parts in AutoCAD, and other Parts Library parts in the Parts Library. Import columns: part number, description, qty. Product BOMs are created in Master → Product Management.</p>
           <div class="eng-kpis" id="bomKpis"></div>
           <div class="page-header-actions" style="margin-bottom:12px">
             <button type="button" class="btn btn-outline" onclick="Engineering.addAllUnidentified()">Add unidentified to master</button>
@@ -1997,7 +2125,7 @@
 <script src="ui.js?v=20260729jobtype"></script>
 <script src="excel-export.js?v=20261111count"></script>
 <script src="asset-management.js?v=20261110kpi"></script>
-<script src="engineering.js?v=20261029fix"></script>
-<script src="app.js?v=20261111kpi"></script>
+<script src="engineering.js?v=20261113product"></script>
+<script src="app.js?v=20261113product"></script>
 </body>
 </html>

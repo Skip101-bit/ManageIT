@@ -69,6 +69,8 @@ const DB = {
   jobCardLines: [],
   stockChecks: [],
   bomHistory: [],
+  products: [],
+  productBomLines: [],
   settings: {},
   useApi: false,
   _syncTimer: null,
@@ -94,7 +96,7 @@ const DB = {
       if (Array.isArray(data[k])) this[k] = data[k];
     });
     let keepEngineering = false;
-    ['bomLines','pastelTimeline','pastelChecks','pastelUpdates','jobCardLines','stockChecks','bomHistory'].forEach(k => {
+    ['bomLines','pastelTimeline','pastelChecks','pastelUpdates','jobCardLines','stockChecks','bomHistory','products','productBomLines'].forEach(k => {
       if (!Array.isArray(data[k])) return;
       if (!data[k].length && Array.isArray(this[k]) && this[k].length) { keepEngineering = true; return; }
       this[k] = data[k];
@@ -113,14 +115,14 @@ const DB = {
   },
 
   cacheLocal() {
-    const keys = ['users','jobs','stock','activity','transactions','storageLocations','audits','reconciliations','pendingApprovals','auditSessions','reconHistory','serialNumbers','assets','assetMaintenance','bomLines','pastelTimeline','pastelChecks','pastelUpdates','jobCardLines','stockChecks','bomHistory','settings'];
+    const keys = ['users','jobs','stock','activity','transactions','storageLocations','audits','reconciliations','pendingApprovals','auditSessions','reconHistory','serialNumbers','assets','assetMaintenance','bomLines','pastelTimeline','pastelChecks','pastelUpdates','jobCardLines','stockChecks','bomHistory','products','productBomLines','settings'];
     keys.forEach(k => {
       try { localStorage.setItem('manageit_' + k, JSON.stringify(this[k])); } catch(e) {}
     });
   },
 
   load() {
-    const keys = ['users','jobs','stock','activity','transactions','storageLocations','audits','reconciliations','pendingApprovals','auditSessions','reconHistory','serialNumbers','assets','assetMaintenance','bomLines','pastelTimeline','pastelChecks','pastelUpdates','jobCardLines','stockChecks','bomHistory','settings'];
+    const keys = ['users','jobs','stock','activity','transactions','storageLocations','audits','reconciliations','pendingApprovals','auditSessions','reconHistory','serialNumbers','assets','assetMaintenance','bomLines','pastelTimeline','pastelChecks','pastelUpdates','jobCardLines','stockChecks','bomHistory','products','productBomLines','settings'];
     keys.forEach(k => {
       try {
         const raw = localStorage.getItem('manageit_' + k);
@@ -191,6 +193,8 @@ const DB = {
       jobCardLines: this.jobCardLines,
       stockChecks: this.stockChecks,
       bomHistory: this.bomHistory,
+      products: this.products,
+      productBomLines: this.productBomLines,
       settings: this.settings
     };
   },
@@ -710,7 +714,7 @@ let activePortal = null;
 
 const PORTAL_PAGES = {
   stockit: ['stockithome', 'inventorylist', 'jobstock', 'transactions', 'audit', 'reconciliation', 'bom', 'pastel', 'approvals'],
-  master: ['masterhome', 'jobmanagement', 'generalstock', 'addstorage', 'assetmanagement'],
+  master: ['masterhome', 'jobmanagement', 'generalstock', 'productmanagement', 'addstorage', 'assetmanagement'],
   admin: ['adminhome', 'adminusers', 'settings', 'rolematrix', 'usermanagement', 'adduser'],
   reports: ['dashboard', 'quickactions', 'kpi', 'exports', 'useractivity', 'workactivity']
 };
@@ -828,7 +832,7 @@ function navTo(pageId, navEl, skipPortalInfer) {
     kpi: 'ViewReports', exports: 'ExportReports', useractivity: 'ViewReports', workactivity: 'ViewReports',
     transactions: 'TransactionHistory', generalstock: 'StockNumber', inventorylist: 'StockNumber',
     stockithome: 'StockNumber', jobstock: 'StockNumber',
-    bom: 'StockNumber', pastel: 'StockNumber',
+    bom: 'StockNumber', pastel: 'StockNumber', productmanagement: 'StockNumber',
     reconciliation: 'StockAdjustments', audit: 'StockTake', addstorage: 'StockLocation',
     assetmanagement: 'AssetManagement',
     approvals: 'StockAdjustments', rolematrix: 'UserManagement'
@@ -881,7 +885,7 @@ function navTo(pageId, navEl, skipPortalInfer) {
     home: 'ManageIT Portals', stockithome: 'Stock-IT Home', dashboard: 'Dashboard', quickactions: 'Quick Actions',
     jobmanagement: 'Job Management', assetmanagement: 'Asset Management', generalstock: 'Inventory Management', inventorylist: 'Inventory List',
     jobstock: 'Allocated Inventory', reconciliation: 'Inventory Reconciliation',
-    bom: 'BOM', pastel: 'Pastel Alignment',
+    bom: 'BOM', pastel: 'Pastel Alignment', productmanagement: 'Product Management',
     addstorage: 'Storage Locations', transactions: 'Inventory Transactions',
     audit: 'Inventory Audit', usermanagement: 'User Management',
     adduser: 'Add / Edit User', kpi: 'KPI Reports', exports: 'Export Reports',
@@ -921,6 +925,7 @@ function refreshPage(pageId) {
     case 'reconciliation': if (window.AuditWF) AuditWF.renderReconPage(); break;
     case 'bom': if (window.Engineering) Engineering.renderBom(); break;
     case 'pastel': if (window.Engineering) Engineering.renderPastel(); break;
+    case 'productmanagement': if (window.Engineering) Engineering.renderProducts(); break;
     case 'audit': if (window.AuditWF) AuditWF.renderAuditPage(); break;
     case 'addstorage': renderStorageList(); break;
     case 'assetmanagement': renderAssetManagementPage(); break;
@@ -3403,6 +3408,7 @@ function renderMasterHome() {
   document.getElementById('masterStatStock').textContent = DB.stock.length;
   document.getElementById('masterStatStorage').textContent = DB.storageLocations.length || DEFAULT_STORAGE_LOCATIONS.length;
   document.getElementById('masterStatAssets').textContent = (DB.assets || []).length;
+  document.getElementById('masterStatProducts').textContent = (DB.products || []).length;
   const dateEl = document.getElementById('masterHomeDate');
   if (dateEl) dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   if (typeof hydrateIcons === 'function') hydrateIcons(document.getElementById('page-masterhome'));

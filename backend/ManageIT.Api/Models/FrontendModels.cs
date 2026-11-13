@@ -23,6 +23,8 @@ public sealed class AppStateDto
     public List<JobCardLineDto>? JobCardLines { get; set; }
     public List<StockCheckDto>? StockChecks { get; set; }
     public List<BomHistoryDto>? BomHistory { get; set; }
+    public List<ProductDto>? Products { get; set; }
+    public List<ProductBomLineDto>? ProductBomLines { get; set; }
     public Dictionary<string, object?> Settings { get; set; } = new();
 }
 
@@ -287,6 +289,52 @@ public sealed class BomLineDto
     public string ExportedBy { get; set; } = "";
     public string PnUpdateLocation { get; set; } = "";
     public string PnUpdateReason { get; set; } = "";
+    public string? ImportedAt { get; set; }
+    public string LoadedFrom { get; set; } = "";
+    public string ModelNumber { get; set; } = "";
+}
+
+public sealed class ProductDto
+{
+    public string Id { get; set; } = "";
+    public string ModelNumber { get; set; } = "";
+    public string ProductName { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Category { get; set; } = "";
+    public string Status { get; set; } = "Active";
+    public string? CreatedAt { get; set; }
+    public string? UpdatedAt { get; set; }
+    public string BomFileName { get; set; } = "";
+    public string BomSource { get; set; } = "";
+    public string BomDiscipline { get; set; } = "";
+    public string? BomUploadedAt { get; set; }
+    public string BomUploadedBy { get; set; } = "";
+    public List<ProductBomUploadDto> BomUploads { get; set; } = [];
+}
+
+public sealed class ProductBomUploadDto
+{
+    public string At { get; set; } = "";
+    public string FileName { get; set; } = "";
+    public int Lines { get; set; }
+    public string By { get; set; } = "";
+    public string Source { get; set; } = "";
+}
+
+public sealed class ProductBomLineDto
+{
+    public string Id { get; set; } = "";
+    public string ModelNumber { get; set; } = "";
+    public string PartNumber { get; set; } = "";
+    public string Description { get; set; } = "";
+    public decimal Qty { get; set; }
+    public string Discipline { get; set; } = "Other";
+    public string Source { get; set; } = "";
+    public string ExportedBy { get; set; } = "";
+    public string PnUpdateLocation { get; set; } = "";
+    public string PnUpdateReason { get; set; } = "";
+    public string? ImportedAt { get; set; }
+    public string FileName { get; set; } = "";
 }
 
 public sealed class PastelStepDto
